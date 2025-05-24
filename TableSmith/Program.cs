@@ -1,10 +1,10 @@
 ﻿using System.Configuration;
 using System.Reflection;
 using System.Windows;
-using Wpf_App.Common;
+using TableSmith.Common;
 using WpfApp1.Page;
 
-namespace Wpf_App
+namespace TableSmith
 {
     /// <summary>
     /// 起動WPFアプリケーションのエントリポイント

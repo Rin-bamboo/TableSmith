@@ -1,8 +1,9 @@
-﻿using System.Windows;
-using Wpf_App;
-using Wpf_App.Views; // WPF 名前空間を追加
+﻿using MahApps.Metro.Controls;
+using System.Windows;
+using TableSmith;
+using TableSmith.Views; // WPF 名前空間を追加
 
-namespace Wpf_App.Common
+namespace TableSmith.Common
 {
     internal class Form
     {
@@ -11,7 +12,7 @@ namespace Wpf_App.Common
         /// MainWindowのインスタンス
         /// </summary>
         private MainWindow? _mainWindow { get; set; }
-        public Window mainWindowOpen()
+        public MetroWindow mainWindowOpen()
         {
             this._mainWindow = new MainWindow();
             return this._mainWindow;

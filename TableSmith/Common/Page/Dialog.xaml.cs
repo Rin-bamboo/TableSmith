@@ -1,10 +1,10 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using Wpf_App.Common.Enum;
-using static Wpf_App.Common.Enum.CommonEnum;
+using TableSmith.Common.Enum;
+using static TableSmith.Common.Enum.CommonEnum;
 
-namespace WpfApp1.Page
+namespace TableSmith.Page
 {
     /// <summary>
     /// エラーダイアログを表示するためのクラスです。ボタン構成やタイトルなどを指定して呼び出すことができます。

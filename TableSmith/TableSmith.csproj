@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <StartupObject>TableSmith.Program</StartupObject> <!-- ←追加 -->
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -14,12 +15,20 @@
 
   <ItemGroup>
     <None Remove="Resources\Images\ErrorAnimation.gif" />
+    <None Remove="Resources\Images\List.png" />
+    <None Remove="Resources\Images\NewCreate.png" />
     <None Remove="Resources\question.png" />
     <None Remove="Resources\warning.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Resources\Images\ErrorAnimation.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Images\List.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Images\NewCreate.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\Images\question.png">
@@ -31,7 +40,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="log4net" Version="3.0.4" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="log4net" Version="3.1.0" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
     <PackageReference Include="WpfAnimatedGif" Version="2.0.2" />
   </ItemGroup>
 
@@ -67,7 +78,10 @@
   <ItemGroup>
     <Folder Include="Services\" />
     <Folder Include="Helpers\" />
-    <Folder Include="Models\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="App.xaml" />
   </ItemGroup>
 
 </Project>

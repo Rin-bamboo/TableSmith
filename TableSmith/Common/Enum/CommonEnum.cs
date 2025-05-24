@@ -1,4 +1,4 @@
-﻿namespace Wpf_App.Common.Enum
+﻿namespace TableSmith.Common.Enum
 {
     public static class CommonEnum
     {

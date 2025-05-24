@@ -1,9 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using Wpf_App.Common.Enum;
+using TableSmith.Common.Enum;
 using WpfAnimatedGif;
-using static Wpf_App.Common.Enum.CommonEnum;
+using static TableSmith.Common.Enum.CommonEnum;
 
 namespace WpfApp1.Page
 {
