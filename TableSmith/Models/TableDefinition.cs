@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Controls;
+using System.Collections.ObjectModel;
 
 namespace TableSmith.Models
 {
-    public class TableDefinition // Changed from 'internal' to 'public'
+    public class TableDefinition
     {
-        public required string TableName { get; set; }
-        public required string TableDisplayName { get; set; }
-        public required List<ColumnDefinition> Columns { get; set; }
+        public string TableName { get; set; } = string.Empty;
+        public string TableDisplayName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ObservableCollection<ColumnDefinition> Columns { get; set; } = new();
     }
-
 }

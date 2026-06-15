@@ -1,79 +1,184 @@
-﻿<Window x:Class="TableSmith.Views.TableCreate"
-       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-       xmlns:local="clr-namespace:TableSmith.ViewModels"
-       mc:Ignorable="d"
-       Title="TableSmith:テーブル設計支援アプリケーション" Height="401" Width="800">
-    <DockPanel>
+<Controls:MetroWindow x:Class="TableSmith.Views.TableCreate"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                      xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                      mc:Ignorable="d"
+                      Title="TableSmith: テーブル定義作成"
+                      Height="650"
+                      Width="1100"
+                      MinHeight="560"
+                      MinWidth="920"
+                      WindowStartupLocation="CenterOwner"
+                      GlowBrush="DeepSkyBlue"
+                      BorderThickness="1"
+                      Background="#F7F9FC">
+    <Controls:MetroWindow.Resources>
+        <Style x:Key="TableNameInputStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="データベース上のテーブル名を入力してください。英字またはアンダースコアで始まり、英数字とアンダースコアが使用できます。" />
+        </Style>
+        <Style x:Key="TableDisplayNameInputStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="画面や設計書に表示するテーブルの日本語名・業務名を入力してください。" />
+        </Style>
+        <Style x:Key="DescriptionInputStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="テーブルの用途や補足説明を入力してください。" />
+        </Style>
+        <Style x:Key="ColumnNameCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="データベース上のカラム名を入力してください。テーブル内で重複できません。" />
+        </Style>
+        <Style x:Key="ColumnDisplayNameCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="画面や設計書に表示するカラムの日本語名・業務名を入力してください。" />
+        </Style>
+        <Style x:Key="ColumnDataTypeCellStyle" TargetType="ComboBox">
+            <Setter Property="ToolTip" Value="カラムのデータ型を選択してください。" />
+        </Style>
+        <Style x:Key="ColumnSizeCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="文字列型や decimal 型など、サイズ指定が必要な型の桁数・長さを入力してください。" />
+        </Style>
+        <Style x:Key="ColumnCheckCellStyle" TargetType="CheckBox">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ToolTip" Value="該当する制約を付ける場合はチェックしてください。PK は Not Null が必要です。" />
+        </Style>
+        <Style x:Key="ForeignKeyReferenceComboStyle" TargetType="ComboBox">
+            <Setter Property="ToolTip" Value="外部キーとして参照する既存テーブルのPKを選択してください。" />
+            <Setter Property="MinWidth" Value="220" />
+        </Style>
+        <Style x:Key="ColumnDefaultValueCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="カラムの既定値を入力してください。不要な場合は空欄にしてください。" />
+        </Style>
+        <Style x:Key="ColumnDescriptionCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="カラムの意味、入力ルール、補足説明を入力してください。" />
+        </Style>
+    </Controls:MetroWindow.Resources>
 
-        <!-- メニューバー -->
+    <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="ファイル">
-                <MenuItem Header="新規" />
-                <MenuItem Header="開く" />
-                <MenuItem Header="終了" />
-            </MenuItem>
-            <MenuItem Header="ヘルプ">
-                <MenuItem Header="バージョン情報" />
+                <MenuItem Header="新規" Click="NewMenuItem_Click" />
+                <MenuItem Header="閉じる" Click="CloseMenuItem_Click" />
             </MenuItem>
         </Menu>
 
-        <!-- メイン画面のレイアウト -->
-        <Grid Margin="5">
+        <Grid Margin="18">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="79*"/>
-                <ColumnDefinition Width="271*"/>
-            </Grid.ColumnDefinitions>
 
-            <Label Grid.Column="0" VerticalAlignment="Center" Content="テーブル情報：" Margin="5,0,5,0" Height="26"/>
+            <GroupBox Header="1. テーブル情報" Padding="14" Margin="0,0,0,14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="1"  Grid.Row="0"  Margin="20,20,20,20" Grid.ColumnSpan="2">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="テーブル物理名" VerticalAlignment="Center" Margin="0,0,10,10" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding CurrentTable.TableName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TableNameInputStyle}" Height="30" Margin="0,0,24,10" />
 
-                <Label Content="テーブル物理名" Margin="5,0,0,5" />
-                <TextBox Text="{Binding CurrentTable.TableName}" />
-                <!--PlaceholderText="テーブル物理名" />-->
-                <Label Content="テーブル物理名" Margin="5,0,0,5" />
-                <TextBox Text="{Binding CurrentTable.TableDisplayName}" />
-                <!--PlaceholderText="テーブル論理名" />-->
+                    <TextBlock Grid.Row="0" Grid.Column="2" Text="テーブル論理名" VerticalAlignment="Center" Margin="0,0,10,10" />
+                    <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding CurrentTable.TableDisplayName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TableDisplayNameInputStyle}" Height="30" Margin="0,0,0,10" />
 
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="説明" VerticalAlignment="Top" Margin="0,4,10,0" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                             Text="{Binding CurrentTable.Description, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource DescriptionInputStyle}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="70"
+                             VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </GroupBox>
+
+            <GroupBox Grid.Row="1" Header="2. カラム情報" Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                        <Button Content="追加" Width="90" Margin="0,0,8,0" Click="AddColumnButton_Click" />
+                        <Button Content="削除" Width="90" Click="RemoveColumnButton_Click" />
+                    </StackPanel>
+
+                    <DataGrid x:Name="ColumnDataGrid"
+                              Grid.Row="1"
+                              ItemsSource="{Binding CurrentTable.Columns}"
+                              SelectedItem="{Binding SelectedColumn}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              RowHeaderWidth="0"
+                              AlternatingRowBackground="#EEF4FB"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="No" Binding="{Binding No}" Width="55" IsReadOnly="True" />
+                            <DataGridTextColumn Header="物理名" Binding="{Binding ColumnName, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnNameCellStyle}" Width="160" />
+                            <DataGridTextColumn Header="論理名" Binding="{Binding ColumnDisplayName, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnDisplayNameCellStyle}" Width="170" />
+                            <DataGridComboBoxColumn Header="型"
+                                                    SelectedItemBinding="{Binding DataType, UpdateSourceTrigger=PropertyChanged}"
+                                                    EditingElementStyle="{StaticResource ColumnDataTypeCellStyle}"
+                                                    Width="130">
+                                <DataGridComboBoxColumn.ItemsSource>
+                                    <x:Array Type="{x:Type sys:String}" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                                        <sys:String>bigint</sys:String>
+                                        <sys:String>bit</sys:String>
+                                        <sys:String>date</sys:String>
+                                        <sys:String>datetime</sys:String>
+                                        <sys:String>decimal</sys:String>
+                                        <sys:String>int</sys:String>
+                                        <sys:String>nchar</sys:String>
+                                        <sys:String>nvarchar</sys:String>
+                                        <sys:String>uniqueidentifier</sys:String>
+                                        <sys:String>varchar</sys:String>
+                                    </x:Array>
+                                </DataGridComboBoxColumn.ItemsSource>
+                            </DataGridComboBoxColumn>
+                            <DataGridTextColumn Header="サイズ" Binding="{Binding DataSize, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnSizeCellStyle}" Width="85" />
+                            <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="60" />
+                            <DataGridCheckBoxColumn Header="Not Null" Binding="{Binding IsNotNull, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="85" />
+                            <DataGridCheckBoxColumn Header="FK" Binding="{Binding IsForeignKey, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="60" />
+                            <DataGridTemplateColumn Header="参照PK" Width="240">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ForeignKeyReferenceId}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding DataContext.ForeignKeyReferences, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  SelectedValue="{Binding ForeignKeyReferenceId, UpdateSourceTrigger=PropertyChanged}"
+                                                  SelectedValuePath="ReferenceId"
+                                                  DisplayMemberPath="DisplayName"
+                                                  SelectionChanged="ForeignKeyReferenceComboBox_SelectionChanged"
+                                                  IsEnabled="{Binding IsForeignKey}"
+                                                  Style="{StaticResource ForeignKeyReferenceComboStyle}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="既定値" Binding="{Binding DefaultValue, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnDefaultValueCellStyle}" Width="120" />
+                            <DataGridTextColumn Header="説明" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnDescriptionCellStyle}" Width="*" MinWidth="180" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </GroupBox>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <Button Content="キャンセル" Width="100" Margin="0,0,8,0" Click="CancelButton_Click" />
+                <Button Content="作成" Width="100" Click="CreateButton_Click" />
             </StackPanel>
-
-            <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Content="カラム情報" Margin="5,0,5,0" Height="26"/>
-
-            <DataGrid Grid.Column="1" Grid.Row="1" Margin="20,20,20,20" ItemsSource="{Binding CurrentTable.Columns}" AutoGenerateColumns="False" CanUserAddRows="True" Grid.ColumnSpan="2">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="物理名" Binding="{Binding ColumnName}" />
-                    <DataGridTextColumn Header="論理名" Binding="{Binding ColumnDisplayName}" />
-                    <DataGridTextColumn Header="型" Binding="{Binding DataType}" />
-                    <DataGridTextColumn Header="サイズ" Binding="{Binding DataSize}" />
-                    <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey}" />
-                    <DataGridCheckBoxColumn Header="Not Null" Binding="{Binding IsNotNull}" />
-                    <DataGridTextColumn Header="説明" Binding="{Binding Description}" />
-                </DataGrid.Columns>
-
-            </DataGrid>
-
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,5" Grid.Column="2">
-                <Button Content="追加" Width="75" Command="{Binding AddColumnCommand}" Margin="5"/>
-                <Button Content="削除" Width="75" Command="{Binding RemoveColumnCommand}" Margin="5" />
-            </StackPanel>
-            <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,5,0,5" Grid.Column="0" Width="170">
-                <Button Content="保存" Width="75" Margin="5" Command="{Binding SaveCommand}" />
-                <Button Content="読み込み" Width="75" Margin="5" Command="{Binding LoadCommand}" />
-            </StackPanel>
-
         </Grid>
-
     </DockPanel>
-
-
-</Window>
+</Controls:MetroWindow>
