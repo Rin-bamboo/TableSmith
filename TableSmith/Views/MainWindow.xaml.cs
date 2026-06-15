@@ -26,6 +26,9 @@ namespace TableSmith.Views
             this.DataContext = this;
         }
 
+        /// <summary>
+        /// 現在のプロジェクトを閉じ、新しい空のプロジェクトを開始します。
+        /// </summary>
         private void NewMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (!ConfirmSaveUnsavedChanges())
@@ -39,6 +42,9 @@ namespace TableSmith.Views
             this._hasUnsavedChanges = false;
         }
 
+        /// <summary>
+        /// JSONファイルからTableSmithプロジェクトを読み込みます。
+        /// </summary>
         private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (!ConfirmSaveUnsavedChanges())
@@ -71,21 +77,33 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// 現在の保存先へプロジェクトを保存します。
+        /// </summary>
         private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SaveProject(saveAs: false);
         }
 
+        /// <summary>
+        /// 保存先を選択してプロジェクトを保存します。
+        /// </summary>
         private void SaveAsMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SaveProject(saveAs: true);
         }
 
+        /// <summary>
+        /// アプリケーションを終了します。未保存変更がある場合は終了前に確認します。
+        /// </summary>
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
 
+        /// <summary>
+        /// テーブル作成画面を開き、確定されたテーブルを現在のプロジェクトへ追加します。
+        /// </summary>
         private void ButtonTableCreate_Click(object sender, RoutedEventArgs e)
         {
             var tableCreate = new TableCreate(this.Tables)
@@ -102,6 +120,9 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// テーブル一覧画面を開き、一覧画面で編集が発生した場合は未保存状態にします。
+        /// </summary>
         private void ButtonTableList_Click(object sender, RoutedEventArgs e)
         {
             var tableList = new TableList(this.Tables)
@@ -110,8 +131,15 @@ namespace TableSmith.Views
             };
 
             tableList.ShowDialog();
+            if (tableList.HasChanges)
+            {
+                this._hasUnsavedChanges = true;
+            }
         }
 
+        /// <summary>
+        /// ウィンドウを閉じる前に未保存変更の保存確認を行います。
+        /// </summary>
         protected override void OnClosing(CancelEventArgs e)
         {
             if (!ConfirmSaveUnsavedChanges())
@@ -123,6 +151,11 @@ namespace TableSmith.Views
             base.OnClosing(e);
         }
 
+        /// <summary>
+        /// プロジェクトをJSONファイルへ保存します。
+        /// </summary>
+        /// <param name="saveAs">trueの場合は保存先を選択し直します。</param>
+        /// <returns>保存できた場合はtrue、キャンセルまたは失敗した場合はfalse。</returns>
         private bool SaveProject(bool saveAs)
         {
             var filePath = this._currentProjectFilePath;
@@ -160,6 +193,9 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// 現在のテーブル一覧から保存用のプロジェクトモデルを作成します。
+        /// </summary>
         private TableSmithProject CreateProject()
         {
             return new TableSmithProject
@@ -169,6 +205,9 @@ namespace TableSmith.Views
             };
         }
 
+        /// <summary>
+        /// 読み込んだプロジェクトモデルを画面上のテーブル一覧へ反映します。
+        /// </summary>
         private void LoadProject(TableSmithProject project)
         {
             this.Tables.Clear();
@@ -180,6 +219,10 @@ namespace TableSmith.Views
             this.CurrentTable = this.Tables.FirstOrDefault() ?? new TableDefinition();
         }
 
+        /// <summary>
+        /// 未保存変更がある場合に保存・破棄・キャンセルをユーザーに確認します。
+        /// </summary>
+        /// <returns>後続処理を続けてよい場合はtrue、キャンセルする場合はfalse。</returns>
         private bool ConfirmSaveUnsavedChanges()
         {
             if (!this._hasUnsavedChanges)

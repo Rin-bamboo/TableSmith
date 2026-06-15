@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MahApps.Metro.Controls;
 using TableSmith.Models;
+using TableSmith.Services;
 
 namespace TableSmith.Views
 {
@@ -13,6 +14,8 @@ namespace TableSmith.Views
     public partial class TableCreate : MetroWindow
     {
         private static readonly Regex SqlNameRegex = new(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled);
+
+        private readonly string? _editingOriginalTableName;
 
         public TableDefinition CurrentTable { get; set; } = new();
         public ColumnDefinition? SelectedColumn { get; set; }
@@ -24,34 +27,68 @@ namespace TableSmith.Views
         {
         }
 
+        /// <summary>
+        /// テーブル新規作成用の画面を初期化します。
+        /// </summary>
+        /// <param name="existingTables">外部キー候補や重複チェックに使う既存テーブル一覧。</param>
         public TableCreate(ObservableCollection<TableDefinition> existingTables)
         {
             this.ExistingTables = existingTables;
             LoadForeignKeyReferences();
             InitializeComponent();
             this.DataContext = this;
-            AddColumn();
+            ApplyDefaultColumnsTemplate();
         }
 
+        /// <summary>
+        /// テーブル編集用の画面を初期化します。キャンセル時に元データを壊さないよう、編集対象はコピーして保持します。
+        /// </summary>
+        /// <param name="existingTables">外部キー候補や重複チェックに使う既存テーブル一覧。</param>
+        /// <param name="tableToEdit">編集対象のテーブル。</param>
+        public TableCreate(ObservableCollection<TableDefinition> existingTables, TableDefinition tableToEdit)
+        {
+            this.ExistingTables = existingTables;
+            this.CurrentTable = CloneTable(tableToEdit);
+            this._editingOriginalTableName = tableToEdit.TableName;
+            LoadForeignKeyReferences();
+            InitializeComponent();
+            this.Title = "TableSmith: テーブル定義編集";
+            this.SaveButton.Content = "更新";
+            this.DataContext = this;
+            this.SelectedColumn = this.CurrentTable.Columns.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 入力内容を破棄し、新しいテーブル定義を入力できる状態に戻します。
+        /// </summary>
         private void NewMenuItem_Click(object sender, RoutedEventArgs e)
         {
             this.CurrentTable = new TableDefinition();
             LoadForeignKeyReferences();
-            AddColumn();
+            ApplyDefaultColumnsTemplate();
             this.DataContext = null;
             this.DataContext = this;
         }
 
+        /// <summary>
+        /// テーブル作成/編集画面を閉じます。
+        /// </summary>
         private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
 
+        /// <summary>
+        /// カラム入力行を1行追加します。
+        /// </summary>
         private void AddColumnButton_Click(object sender, RoutedEventArgs e)
         {
             AddColumn();
         }
 
+        /// <summary>
+        /// 選択中のカラム入力行を削除し、行番号を振り直します。
+        /// </summary>
         private void RemoveColumnButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.SelectedColumn == null)
@@ -64,6 +101,9 @@ namespace TableSmith.Views
             RenumberColumns();
         }
 
+        /// <summary>
+        /// 外部キー参照先が選択されたとき、参照PKの属性を現在のカラムへ反映します。
+        /// </summary>
         private void ForeignKeyReferenceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (sender is not System.Windows.Controls.ComboBox { DataContext: ColumnDefinition column })
@@ -74,12 +114,18 @@ namespace TableSmith.Views
             ApplyForeignKeyReference(column);
         }
 
+        /// <summary>
+        /// 入力内容を確定せずに画面を閉じます。
+        /// </summary>
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
             this.Close();
         }
 
+        /// <summary>
+        /// DataGridの編集中セルを確定し、入力チェック後にテーブル作成/更新を確定します。
+        /// </summary>
         private void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             this.ColumnDataGrid.CommitEdit();
@@ -94,6 +140,9 @@ namespace TableSmith.Views
             this.Close();
         }
 
+        /// <summary>
+        /// 初期値付きのカラムを追加し、追加行を選択状態にします。
+        /// </summary>
         private void AddColumn()
         {
             var nextNo = this.CurrentTable.Columns.Count + 1;
@@ -109,6 +158,23 @@ namespace TableSmith.Views
             this.ColumnDataGrid.ScrollIntoView(column);
         }
 
+        /// <summary>
+        /// 新規テーブルにidと監査情報の標準カラムを投入します。
+        /// </summary>
+        private void ApplyDefaultColumnsTemplate()
+        {
+            this.CurrentTable.Columns = TableTemplateService.CreateDefaultColumns();
+            this.SelectedColumn = this.CurrentTable.Columns.FirstOrDefault();
+            this.ColumnDataGrid.SelectedItem = this.SelectedColumn;
+            if (this.SelectedColumn != null)
+            {
+                this.ColumnDataGrid.ScrollIntoView(this.SelectedColumn);
+            }
+        }
+
+        /// <summary>
+        /// カラム一覧の表示順に合わせてNoを振り直します。
+        /// </summary>
         private void RenumberColumns()
         {
             for (var index = 0; index < this.CurrentTable.Columns.Count; index++)
@@ -118,6 +184,10 @@ namespace TableSmith.Views
 
         }
 
+        /// <summary>
+        /// テーブル情報とカラム情報の入力チェックをまとめて実行します。
+        /// </summary>
+        /// <returns>入力内容が有効な場合はtrue。</returns>
         private bool ValidateInputs()
         {
             var errors = new StringBuilder();
@@ -134,6 +204,9 @@ namespace TableSmith.Views
             return false;
         }
 
+        /// <summary>
+        /// テーブル物理名・論理名・重複の入力チェックを行います。
+        /// </summary>
         private void ValidateTable(StringBuilder errors)
         {
             this.CurrentTable.TableName = this.CurrentTable.TableName.Trim();
@@ -148,7 +221,9 @@ namespace TableSmith.Views
             {
                 errors.AppendLine("・テーブル物理名は英字またはアンダースコアで始め、英数字とアンダースコアで入力してください。");
             }
-            else if (this.ExistingTables.Any(table => table.TableName.Equals(this.CurrentTable.TableName, StringComparison.OrdinalIgnoreCase)))
+            else if (this.ExistingTables.Any(table =>
+                !IsEditingOriginalTable(table)
+                && table.TableName.Equals(this.CurrentTable.TableName, StringComparison.OrdinalIgnoreCase)))
             {
                 errors.AppendLine($"・テーブル物理名 '{this.CurrentTable.TableName}' は既に作成されています。");
             }
@@ -159,6 +234,9 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// カラム必須項目、名前重複、サイズ、PK/FK制約の入力チェックを行います。
+        /// </summary>
         private void ValidateColumns(StringBuilder errors)
         {
             var columnNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -232,6 +310,9 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// 外部キー設定の参照先PK、型、サイズの整合性をチェックします。
+        /// </summary>
         private void ValidateForeignKey(ColumnDefinition column, string rowName, StringBuilder errors)
         {
             if (this.ForeignKeyReferences.Count == 0)
@@ -281,12 +362,20 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// 既存テーブルから外部キー参照候補となるPKカラム一覧を作成します。
+        /// </summary>
         private void LoadForeignKeyReferences()
         {
             this.ForeignKeyReferences.Clear();
 
             foreach (var table in this.ExistingTables)
             {
+                if (IsEditingOriginalTable(table))
+                {
+                    continue;
+                }
+
                 foreach (var column in table.Columns.Where(column => column.IsPrimaryKey))
                 {
                     if (string.IsNullOrWhiteSpace(table.TableName) || string.IsNullOrWhiteSpace(column.ColumnName))
@@ -306,6 +395,9 @@ namespace TableSmith.Views
             }
         }
 
+        /// <summary>
+        /// FK未選択時に参照先情報をクリアします。
+        /// </summary>
         private static void ClearForeignKeyReference(ColumnDefinition column)
         {
             column.ForeignKeyReferenceId = string.Empty;
@@ -314,6 +406,69 @@ namespace TableSmith.Views
             column.AutoForeignKeyColumnName = string.Empty;
         }
 
+        /// <summary>
+        /// テーブル定義を編集用に複製します。
+        /// </summary>
+        public static TableDefinition CloneTable(TableDefinition source)
+        {
+            return new TableDefinition
+            {
+                TableName = source.TableName,
+                TableDisplayName = source.TableDisplayName,
+                Description = source.Description,
+                Columns = new ObservableCollection<ColumnDefinition>(
+                    source.Columns.Select(CloneColumn))
+            };
+        }
+
+        /// <summary>
+        /// 編集画面で確定された値を元のテーブル定義へ反映します。
+        /// </summary>
+        public static void CopyTableValues(TableDefinition source, TableDefinition target)
+        {
+            target.TableName = source.TableName;
+            target.TableDisplayName = source.TableDisplayName;
+            target.Description = source.Description;
+            target.Columns = new ObservableCollection<ColumnDefinition>(
+                source.Columns.Select(CloneColumn));
+        }
+
+        /// <summary>
+        /// 編集中の元テーブル自身かどうかを判定します。重複チェックやFK候補作成から自分自身を除外するために使います。
+        /// </summary>
+        private bool IsEditingOriginalTable(TableDefinition table)
+        {
+            return !string.IsNullOrWhiteSpace(this._editingOriginalTableName)
+                && table.TableName.Equals(this._editingOriginalTableName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// カラム定義を複製します。
+        /// </summary>
+        private static ColumnDefinition CloneColumn(ColumnDefinition source)
+        {
+            return new ColumnDefinition
+            {
+                No = source.No,
+                ColumnName = source.ColumnName,
+                ColumnDisplayName = source.ColumnDisplayName,
+                DataType = source.DataType,
+                DataSize = source.DataSize,
+                IsPrimaryKey = source.IsPrimaryKey,
+                IsNotNull = source.IsNotNull,
+                IsForeignKey = source.IsForeignKey,
+                ForeignKeyReferenceId = source.ForeignKeyReferenceId,
+                ReferenceTableName = source.ReferenceTableName,
+                ReferenceColumnName = source.ReferenceColumnName,
+                AutoForeignKeyColumnName = source.AutoForeignKeyColumnName,
+                DefaultValue = source.DefaultValue,
+                Description = source.Description
+            };
+        }
+
+        /// <summary>
+        /// 選択された参照PKのカラム情報をFKカラムへ継承し、物理名の初期値を設定します。
+        /// </summary>
         private void ApplyForeignKeyReference(ColumnDefinition column)
         {
             if (!column.IsForeignKey || string.IsNullOrWhiteSpace(column.ForeignKeyReferenceId))
@@ -353,6 +508,9 @@ namespace TableSmith.Views
 
         }
 
+        /// <summary>
+        /// サイズ指定が必須となるデータ型かどうかを判定します。
+        /// </summary>
         private static bool RequiresSize(string dataType)
         {
             return dataType.Equals("char", StringComparison.OrdinalIgnoreCase)
