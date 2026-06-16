@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using MahApps.Metro.Controls;
 using TableSmith.Models;
+using TableSmith.Services;
 
 namespace TableSmith.Views
 {
@@ -13,6 +14,7 @@ namespace TableSmith.Views
     public partial class TableList : MetroWindow, INotifyPropertyChanged
     {
         private TableDefinition? _selectedTable;
+        private readonly CreateTableSqlService _createTableSqlService = new();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -74,6 +76,54 @@ namespace TableSmith.Views
             TableCreate.CopyTableValues(tableCreate.CurrentTable, this.SelectedTable);
             this.HasChanges = true;
             OnPropertyChanged(nameof(SelectedTable));
+        }
+
+        /// <summary>
+        /// 選択中テーブルのCREATE TABLE文を生成して表示します。
+        /// </summary>
+        private void CreateSqlButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.SelectedTable == null)
+            {
+                MessageBox.Show("CREATE文を作成するテーブルを選択してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var sql = _createTableSqlService.Generate(this.SelectedTable);
+                var preview = new SqlPreview(sql)
+                {
+                    Owner = this
+                };
+
+                preview.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"CREATE文の作成に失敗しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 全テーブルのCREATE TABLE文をまとめて生成して表示します。
+        /// </summary>
+        private void CreateAllSqlButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var sql = _createTableSqlService.GenerateAll(this.Tables);
+                var preview = new SqlPreview(sql)
+                {
+                    Owner = this
+                };
+
+                preview.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"CREATE文の作成に失敗しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         /// <summary>
