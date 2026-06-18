@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using MahApps.Metro.Controls;
 using Microsoft.Win32;
@@ -11,14 +13,33 @@ namespace TableSmith.Views
     /// <summary>
     /// メイン画面です。
     /// </summary>
-    public partial class MainWindow : MetroWindow
+    public partial class MainWindow : MetroWindow, INotifyPropertyChanged
     {
         private readonly ProjectJsonService _projectJsonService = new();
         private string? _currentProjectFilePath;
         private bool _hasUnsavedChanges;
+        private string _projectName = string.Empty;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public TableDefinition CurrentTable { get; set; } = new();
         public ObservableCollection<TableDefinition> Tables { get; } = new();
+
+        public string ProjectName
+        {
+            get => _projectName;
+            set
+            {
+                if (_projectName == value)
+                {
+                    return;
+                }
+
+                _projectName = value;
+                this._hasUnsavedChanges = true;
+                OnPropertyChanged();
+            }
+        }
 
         public MainWindow()
         {
@@ -38,6 +59,7 @@ namespace TableSmith.Views
 
             this.Tables.Clear();
             this.CurrentTable = new TableDefinition();
+            this.ProjectName = string.Empty;
             this._currentProjectFilePath = null;
             this._hasUnsavedChanges = false;
         }
@@ -125,7 +147,7 @@ namespace TableSmith.Views
         /// </summary>
         private void ButtonTableList_Click(object sender, RoutedEventArgs e)
         {
-            var tableList = new TableList(this.Tables)
+            var tableList = new TableList(this.ProjectName, this.Tables)
             {
                 Owner = this
             };
@@ -158,6 +180,13 @@ namespace TableSmith.Views
         /// <returns>保存できた場合はtrue、キャンセルまたは失敗した場合はfalse。</returns>
         private bool SaveProject(bool saveAs)
         {
+            this.ProjectName = this.ProjectName.Trim();
+            if (string.IsNullOrWhiteSpace(this.ProjectName))
+            {
+                MessageBox.Show("プロジェクト名を入力してください。", "入力確認", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
             var filePath = this._currentProjectFilePath;
             if (saveAs || string.IsNullOrWhiteSpace(filePath))
             {
@@ -165,7 +194,7 @@ namespace TableSmith.Views
                 {
                     Title = "TableSmith プロジェクトを保存",
                     Filter = "TableSmith Project (*.tablesmith.json)|*.tablesmith.json|JSON File (*.json)|*.json|All Files (*.*)|*.*",
-                    FileName = "table-smith-project.tablesmith.json",
+                    FileName = $"{CreateSafeFileName(this.ProjectName)}.tablesmith.json",
                     AddExtension = true,
                     DefaultExt = ".tablesmith.json"
                 };
@@ -201,6 +230,7 @@ namespace TableSmith.Views
             return new TableSmithProject
             {
                 Version = 1,
+                ProjectName = this.ProjectName,
                 Tables = new ObservableCollection<TableDefinition>(this.Tables)
             };
         }
@@ -210,6 +240,7 @@ namespace TableSmith.Views
         /// </summary>
         private void LoadProject(TableSmithProject project)
         {
+            this.ProjectName = project.ProjectName;
             this.Tables.Clear();
             foreach (var table in project.Tables)
             {
@@ -217,6 +248,20 @@ namespace TableSmith.Views
             }
 
             this.CurrentTable = this.Tables.FirstOrDefault() ?? new TableDefinition();
+        }
+
+        /// <summary>
+        /// プロジェクト名をファイル名として利用できる文字列へ変換します。
+        /// </summary>
+        private static string CreateSafeFileName(string projectName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var safeName = new string(projectName
+                .Select(character => invalidChars.Contains(character) ? '_' : character)
+                .ToArray())
+                .Trim();
+
+            return string.IsNullOrWhiteSpace(safeName) ? "TableSmithProject" : safeName;
         }
 
         /// <summary>
@@ -242,6 +287,14 @@ namespace TableSmith.Views
                 MessageBoxResult.No => true,
                 _ => false
             };
+        }
+
+        /// <summary>
+        /// 画面バインディングへプロパティ変更を通知します。
+        /// </summary>
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
