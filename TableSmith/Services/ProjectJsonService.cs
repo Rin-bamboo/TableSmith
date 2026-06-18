@@ -37,7 +37,8 @@ namespace TableSmith.Services
         public TableSmithProject Load(string filePath)
         {
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<TableSmithProject>(json, JsonOptions) ?? new TableSmithProject();
+            return JsonSerializer.Deserialize<TableSmithProject>(json, JsonOptions)
+                ?? throw new InvalidDataException("プロジェクトJSONを読み込めませんでした。");
         }
     }
 }
