@@ -6,6 +6,7 @@
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       mc:Ignorable="d"
                       Title="TableSmith: テーブル一覧"
+                      Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
                       Height="650"
                       Width="1100"
                       MinHeight="560"

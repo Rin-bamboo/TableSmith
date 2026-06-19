@@ -10,10 +10,14 @@ namespace TableSmith.Views
     {
         public string SqlText { get; }
 
-        public SqlPreview(string sqlText)
+        public SqlPreview(string sqlText, string? windowTitle = null)
         {
             InitializeComponent();
             this.SqlText = sqlText;
+            if (!string.IsNullOrWhiteSpace(windowTitle))
+            {
+                this.Title = windowTitle;
+            }
             this.DataContext = this;
         }
 

@@ -3,6 +3,7 @@
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       Title="TableSmith: CREATE TABLE"
+                      Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
                       Height="620"
                       Width="900"
                       MinHeight="480"

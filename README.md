@@ -47,12 +47,20 @@ TableSmithは、データベースのテーブル設計を支援するWindowsデ
 
 ### CREATE文出力
 
+- SQL Server、MySQL、Oracleの出力形式を選択
 - 複数テーブルをチェックボックスで選択
 - 全選択・全解除
 - 選択したテーブルのCREATE TABLE文をまとめて表示
+- 保存先フォルダを指定し、テーブルごとに `テーブル物理名.sql` を出力
+- SQLファイルは日本語コメントに対応したUTF-8形式
 - PK制約、FK制約、Not Null、既定値を出力
+- テーブル・カラムの論理名と説明をRDBのコメント機能へ出力
 
-生成されるSQLは、角括弧による識別子エスケープと `GO` 区切りを使用する **SQL Server形式** です。
+選択したRDBに合わせて、識別子の引用符、データ型、DEFAULT句、複数文の区切りを切り替えます。
+
+- SQL Server: `sp_addextendedproperty`
+- MySQL: `COMMENT`
+- Oracle: `COMMENT ON TABLE` / `COMMENT ON COLUMN`
 
 ### Excelテーブル定義書
 

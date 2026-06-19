@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\Images\TableSmith.ico</ApplicationIcon>
     <AssemblyName>TableSmith</AssemblyName>
     <Product>TableSmith</Product>
     <Description>テーブル設計、外部キー管理、CREATE文・定義書・ER図出力を支援するデスクトップアプリケーション</Description>
@@ -25,6 +26,8 @@
     <None Remove="Resources\Images\ErrorAnimation.gif" />
     <None Remove="Resources\Images\List.png" />
     <None Remove="Resources\Images\NewCreate.png" />
+    <None Remove="Resources\Images\TableSmith.ico" />
+    <None Remove="Resources\Images\TableSmith.png" />
     <None Remove="Resources\question.png" />
     <None Remove="Resources\warning.png" />
   </ItemGroup>
@@ -37,6 +40,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\Images\NewCreate.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Images\TableSmith.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Images\TableSmith.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\Images\question.png">

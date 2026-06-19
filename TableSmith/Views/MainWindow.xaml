@@ -7,6 +7,7 @@
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       mc:Ignorable="d"
                       Title="TableSmith:テーブル設計支援アプリケーション"
+                      Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
                       Height="450" Width="800"
                       WindowStartupLocation="CenterScreen"
                       GlowBrush="DeepSkyBlue"

@@ -3,6 +3,7 @@
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       Title="TableSmith: CREATE文出力"
+                      Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
                       Height="600"
                       Width="760"
                       MinHeight="480"
@@ -29,6 +30,18 @@
                 <TextBlock Text="CREATE TABLE文を生成するテーブルを選択してください。"
                            Foreground="#555555"
                            Margin="0,4,0,0" />
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <TextBlock Text="対象RDB"
+                               Width="80"
+                               VerticalAlignment="Center"
+                               FontWeight="Bold" />
+                    <ComboBox ItemsSource="{Binding DialectOptions}"
+                              SelectedItem="{Binding SelectedDialectOption}"
+                              DisplayMemberPath="DisplayName"
+                              Width="180"
+                              Height="30"
+                              ToolTip="CREATE TABLE文を出力するRDBを選択してください。" />
+                </StackPanel>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
@@ -71,7 +84,8 @@
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button Content="キャンセル" Width="100" Margin="0,0,8,0" Click="CancelButton_Click" />
-            <Button Content="SQL表示" Width="110" Click="PreviewButton_Click" />
+            <Button Content="SQL表示" Width="110" Margin="0,0,8,0" Click="PreviewButton_Click" />
+            <Button Content="SQLファイル出力" Width="130" Click="ExportFilesButton_Click" />
         </StackPanel>
     </Grid>
 </Controls:MetroWindow>
