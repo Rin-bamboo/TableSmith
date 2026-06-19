@@ -1,0 +1,77 @@
+<Controls:MetroWindow x:Class="TableSmith.Views.TableDefinitionExport"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                      Title="TableSmith: テーブル定義書出力"
+                      Height="600"
+                      Width="760"
+                      MinHeight="480"
+                      MinWidth="620"
+                      WindowStartupLocation="CenterOwner"
+                      GlowBrush="DeepSkyBlue"
+                      BorderThickness="1"
+                      Background="#F7F9FC">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <TextBlock Text="出力対象テーブル" FontSize="18" FontWeight="Bold" />
+                <TextBlock Text="Excel定義書へ含めるテーブルを選択してください。"
+                           Foreground="#555555"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+                <Button Content="全選択" Width="90" Margin="0,0,8,0" Click="SelectAllButton_Click" />
+                <Button Content="全解除" Width="90" Click="ClearAllButton_Click" />
+            </StackPanel>
+        </Grid>
+
+        <DataGrid Grid.Row="1"
+                  Margin="0,14,0,0"
+                  ItemsSource="{Binding SelectionItems}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal"
+                  RowHeaderWidth="0"
+                  AlternatingRowBackground="#EEF4FB"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="出力"
+                                        Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="70" />
+                <DataGridTextColumn Header="テーブル物理名"
+                                    Binding="{Binding Table.TableName}"
+                                    Width="220"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn Header="テーブル論理名"
+                                    Binding="{Binding Table.TableDisplayName}"
+                                    Width="220"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn Header="説明"
+                                    Binding="{Binding Table.Description}"
+                                    Width="*"
+                                    MinWidth="180"
+                                    IsReadOnly="True" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="キャンセル" Width="100" Margin="0,0,8,0" Click="CancelButton_Click" />
+            <Button Content="Excel出力" Width="110" Click="ExportButton_Click" />
+        </StackPanel>
+    </Grid>
+</Controls:MetroWindow>

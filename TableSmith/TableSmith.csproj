@@ -7,6 +7,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyName>TableSmith</AssemblyName>
+    <Product>TableSmith</Product>
+    <Description>テーブル設計、外部キー管理、CREATE文・定義書・ER図出力を支援するデスクトップアプリケーション</Description>
+    <Authors>Bamboo</Authors>
+    <Copyright>Copyright (c) 2025 Bamboo</Copyright>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

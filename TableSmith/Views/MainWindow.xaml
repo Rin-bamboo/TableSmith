@@ -29,7 +29,7 @@
                 <MenuItem Header="終了" Click="ExitMenuItem_Click" />
             </MenuItem>
             <MenuItem Header="ヘルプ">
-                <MenuItem Header="バージョン情報" />
+                <MenuItem Header="バージョン情報" Click="VersionInfoMenuItem_Click" />
             </MenuItem>
         </Menu>
 
@@ -64,9 +64,28 @@
                     <Image Source="pack://application:,,,/Resources/Images/List.png" Width="32" Height="32" Margin="0,5"/>
                     <Label Content="テーブル一覧" HorizontalAlignment="Center"  Background="Transparent" BorderBrush="Transparent"/>
                 </StackPanel>
-
             </Button>
 
+            <Button x:Name="ButtonDefinitionExport" Margin="5" Background="#D8E8F5" Click="ButtonDefinitionExport_Click">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/Images/List.png" Width="38" Height="38" Margin="0,5"/>
+                    <Label Content="定義書出力" HorizontalAlignment="Center" Background="Transparent" BorderBrush="Transparent" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="ButtonErDiagram" Margin="5" Background="#DCEBDD" Click="ButtonErDiagram_Click">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/Images/NewCreate.png" Width="42" Height="42" Margin="0,5"/>
+                    <Label Content="ER図" HorizontalAlignment="Center" Background="Transparent" BorderBrush="Transparent" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="ButtonCreateSql" Margin="5" Background="#E8E2F3" Click="ButtonCreateSql_Click">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/Images/NewCreate.png" Width="42" Height="42" Margin="0,5"/>
+                    <Label Content="CREATE文" HorizontalAlignment="Center" Background="Transparent" BorderBrush="Transparent" />
+                </StackPanel>
+            </Button>
         </WrapPanel>
     </DockPanel>
 </Controls:MetroWindow>

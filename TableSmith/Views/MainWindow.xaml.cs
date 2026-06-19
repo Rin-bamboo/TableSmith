@@ -124,6 +124,19 @@ namespace TableSmith.Views
         }
 
         /// <summary>
+        /// アプリケーションのバージョン情報画面を表示します。
+        /// </summary>
+        private void VersionInfoMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var versionInfo = new VersionInfo
+            {
+                Owner = this
+            };
+
+            versionInfo.ShowDialog();
+        }
+
+        /// <summary>
         /// テーブル作成画面を開き、確定されたテーブルを現在のプロジェクトへ追加します。
         /// </summary>
         private void ButtonTableCreate_Click(object sender, RoutedEventArgs e)
@@ -147,7 +160,7 @@ namespace TableSmith.Views
         /// </summary>
         private void ButtonTableList_Click(object sender, RoutedEventArgs e)
         {
-            var tableList = new TableList(this.ProjectName, this.Tables)
+            var tableList = new TableList(this.Tables)
             {
                 Owner = this
             };
@@ -157,6 +170,70 @@ namespace TableSmith.Views
             {
                 this._hasUnsavedChanges = true;
             }
+        }
+
+        /// <summary>
+        /// テーブル選択画面を開き、選択されたテーブルの定義書をExcelへ出力します。
+        /// </summary>
+        private void ButtonDefinitionExport_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Tables.Count == 0)
+            {
+                MessageBox.Show("定義書を出力するテーブルがありません。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var exportWindow = new TableDefinitionExport(this.ProjectName, this.Tables)
+            {
+                Owner = this
+            };
+
+            exportWindow.ShowDialog();
+        }
+
+        /// <summary>
+        /// プロジェクト内の全テーブルからER図を生成してプレビュー表示します。
+        /// </summary>
+        private void ButtonErDiagram_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Tables.Count == 0)
+            {
+                MessageBox.Show("ER図を作成するテーブルがありません。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var preview = new ErDiagramPreview(this.ProjectName, this.Tables)
+                {
+                    Owner = this
+                };
+
+                preview.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"ER図の作成に失敗しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// CREATE文の出力対象テーブルを選択する画面を開きます。
+        /// </summary>
+        private void ButtonCreateSql_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Tables.Count == 0)
+            {
+                MessageBox.Show("CREATE文を作成するテーブルがありません。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var exportWindow = new CreateSqlExport(this.Tables)
+            {
+                Owner = this
+            };
+
+            exportWindow.ShowDialog();
         }
 
         /// <summary>

@@ -1,0 +1,66 @@
+<Controls:MetroWindow x:Class="TableSmith.Views.ErDiagramPreview"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                      Title="TableSmith: ER図"
+                      Height="760"
+                      Width="1200"
+                      MinHeight="560"
+                      MinWidth="860"
+                      WindowStartupLocation="CenterOwner"
+                      GlowBrush="DeepSkyBlue"
+                      BorderThickness="1"
+                      Background="#F7F9FC">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,10">
+            <TextBlock Text="ER図プレビュー"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center" />
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <TextBlock Text="ズーム" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Slider x:Name="ZoomSlider"
+                        Width="180"
+                        Minimum="25"
+                        Maximum="200"
+                        Value="100"
+                        TickFrequency="25"
+                        IsSnapToTickEnabled="True"
+                        ValueChanged="ZoomSlider_ValueChanged" />
+                <TextBlock Text="{Binding ElementName=ZoomSlider, Path=Value, StringFormat={}{0:0}%}"
+                           Width="48"
+                           Margin="8,0,0,0"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Background="#E7ECF1" BorderBrush="#AAB7C4" BorderThickness="1">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="20">
+                <Image x:Name="DiagramImage"
+                       Source="{Binding PreviewImage, Mode=OneWay}"
+                       Stretch="None"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Top"
+                       RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.LayoutTransform>
+                        <ScaleTransform x:Name="DiagramScaleTransform" ScaleX="1" ScaleY="1" />
+                    </Image.LayoutTransform>
+                </Image>
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="SVG保存" Width="100" Margin="0,0,8,0" Click="SaveSvgButton_Click" />
+            <Button Content="PNG保存" Width="100" Margin="0,0,8,0" Click="SavePngButton_Click" />
+            <Button Content="閉じる" Width="100" Click="CloseButton_Click" />
+        </StackPanel>
+    </Grid>
+</Controls:MetroWindow>
