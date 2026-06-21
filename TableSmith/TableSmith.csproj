@@ -13,7 +13,7 @@
     <Description>テーブル設計、外部キー管理、CREATE文・定義書・ER図出力を支援するデスクトップアプリケーション</Description>
     <Authors>Bamboo</Authors>
     <Copyright>Copyright (c) 2025 Bamboo</Copyright>
-    <Version>0.3.0</Version>
+    <Version>0.5.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
