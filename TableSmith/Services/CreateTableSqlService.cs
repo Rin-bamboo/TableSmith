@@ -11,9 +11,13 @@ namespace TableSmith.Services
         /// <summary>
         /// 指定されたテーブル定義のCREATE TABLE文を生成します。
         /// </summary>
-        public string Generate(TableDefinition table, SqlDialect dialect)
+        public string Generate(
+            TableDefinition table,
+            SqlDialect dialect,
+            DatabaseSettings? databaseSettings = null)
         {
             ValidateTable(table);
+            var schemaName = ResolveSchemaName(table, databaseSettings);
 
             var lines = new List<string>();
             foreach (var column in table.Columns.OrderBy(column => column.No))
@@ -36,11 +40,11 @@ namespace TableSmith.Services
 
             foreach (var foreignKey in table.Columns.Where(column => column.IsForeignKey).OrderBy(column => column.No))
             {
-                lines.Add($"    {BuildForeignKeyConstraint(table, foreignKey, dialect)}");
+                lines.Add($"    {BuildForeignKeyConstraint(table, foreignKey, dialect, schemaName)}");
             }
 
             var builder = new StringBuilder();
-            builder.AppendLine($"CREATE TABLE {EscapeName(table.TableName, dialect)}");
+            builder.AppendLine($"CREATE TABLE {BuildQualifiedTableName(schemaName, table.TableName, dialect)}");
             builder.AppendLine("(");
             builder.AppendLine(string.Join("," + Environment.NewLine, lines));
 
@@ -52,6 +56,7 @@ namespace TableSmith.Services
                 {
                     builder.Append($" COMMENT = '{EscapeSqlLiteral(tableComment)}'");
                 }
+                AppendMySqlTableOptions(builder, table, databaseSettings);
                 builder.AppendLine(";");
             }
             else
@@ -59,14 +64,18 @@ namespace TableSmith.Services
                 builder.AppendLine(");");
             }
 
-            AppendObjectComments(builder, table, dialect);
+            AppendIndexes(builder, table, dialect, schemaName);
+            AppendObjectComments(builder, table, dialect, schemaName);
             return builder.ToString();
         }
 
         /// <summary>
         /// 指定された全テーブルのCREATE TABLE文をまとめて生成します。
         /// </summary>
-        public string GenerateAll(IEnumerable<TableDefinition> tables, SqlDialect dialect)
+        public string GenerateAll(
+            IEnumerable<TableDefinition> tables,
+            SqlDialect dialect,
+            DatabaseSettings? databaseSettings = null)
         {
             var tableList = tables.ToList();
             if (tableList.Count == 0)
@@ -78,7 +87,9 @@ namespace TableSmith.Services
                 ? Environment.NewLine + "GO" + Environment.NewLine + Environment.NewLine
                 : Environment.NewLine + Environment.NewLine;
 
-            return string.Join(separator, tableList.Select(table => Generate(table, dialect)));
+            return string.Join(
+                separator,
+                tableList.Select(table => Generate(table, dialect, databaseSettings)));
         }
 
         /// <summary>
@@ -90,6 +101,7 @@ namespace TableSmith.Services
             builder.Append(EscapeName(column.ColumnName, dialect));
             builder.Append(' ');
             builder.Append(BuildDataType(column, dialect));
+            AppendIdentityClause(builder, column, dialect);
 
             // OracleはDEFAULT句をインライン制約より前に配置します。
             if (dialect == SqlDialect.Oracle && !string.IsNullOrWhiteSpace(column.DefaultValue))
@@ -124,7 +136,8 @@ namespace TableSmith.Services
         private static void AppendObjectComments(
             StringBuilder builder,
             TableDefinition table,
-            SqlDialect dialect)
+            SqlDialect dialect,
+            string schemaName)
         {
             if (dialect == SqlDialect.MySql)
             {
@@ -134,19 +147,21 @@ namespace TableSmith.Services
             builder.AppendLine();
             if (dialect == SqlDialect.SqlServer)
             {
-                AppendSqlServerProperty(builder, table.TableName, null, "LogicalName", table.TableDisplayName);
-                AppendSqlServerProperty(builder, table.TableName, null, "MS_Description", table.Description);
+                AppendSqlServerProperty(builder, schemaName, table.TableName, null, "LogicalName", table.TableDisplayName);
+                AppendSqlServerProperty(builder, schemaName, table.TableName, null, "MS_Description", table.Description);
 
                 foreach (var column in table.Columns.OrderBy(column => column.No))
                 {
                     AppendSqlServerProperty(
                         builder,
+                        schemaName,
                         table.TableName,
                         column.ColumnName,
                         "LogicalName",
                         column.ColumnDisplayName);
                     AppendSqlServerProperty(
                         builder,
+                        schemaName,
                         table.TableName,
                         column.ColumnName,
                         "MS_Description",
@@ -159,7 +174,7 @@ namespace TableSmith.Services
             if (!string.IsNullOrWhiteSpace(tableComment))
             {
                 builder.AppendLine(
-                    $"COMMENT ON TABLE {EscapeName(table.TableName, dialect)} " +
+                    $"COMMENT ON TABLE {BuildQualifiedTableName(schemaName, table.TableName, dialect)} " +
                     $"IS '{EscapeSqlLiteral(tableComment)}';");
             }
 
@@ -172,7 +187,7 @@ namespace TableSmith.Services
                 }
 
                 builder.AppendLine(
-                    $"COMMENT ON COLUMN {EscapeName(table.TableName, dialect)}." +
+                    $"COMMENT ON COLUMN {BuildQualifiedTableName(schemaName, table.TableName, dialect)}." +
                     $"{EscapeName(column.ColumnName, dialect)} " +
                     $"IS '{EscapeSqlLiteral(columnComment)}';");
             }
@@ -183,6 +198,7 @@ namespace TableSmith.Services
         /// </summary>
         private static void AppendSqlServerProperty(
             StringBuilder builder,
+            string schemaName,
             string tableName,
             string? columnName,
             string propertyName,
@@ -196,7 +212,8 @@ namespace TableSmith.Services
             builder.Append("EXEC sys.sp_addextendedproperty ");
             builder.Append($"@name = N'{EscapeSqlLiteral(propertyName)}', ");
             builder.Append($"@value = N'{EscapeSqlLiteral(propertyValue)}', ");
-            builder.Append("@level0type = N'SCHEMA', @level0name = N'dbo', ");
+            builder.Append(
+                $"@level0type = N'SCHEMA', @level0name = N'{EscapeSqlLiteral(DefaultSchema(schemaName))}', ");
             builder.Append($"@level1type = N'TABLE', @level1name = N'{EscapeSqlLiteral(tableName)}'");
 
             if (!string.IsNullOrWhiteSpace(columnName))
@@ -247,6 +264,14 @@ namespace TableSmith.Services
                 SqlDialect.Oracle => MapOracleType(sourceType),
                 _ => column.DataType
             };
+
+            // decimalは専用の精度・小数桁数を優先し、旧JSONのDataSizeも後方互換として残します。
+            if (sourceType == "decimal" && column.Precision.HasValue)
+            {
+                return column.Scale.HasValue
+                    ? $"{mappedType}({column.Precision.Value},{column.Scale.Value})"
+                    : $"{mappedType}({column.Precision.Value})";
+            }
 
             if (column.DataSize.HasValue && UsesSize(sourceType))
             {
@@ -316,13 +341,14 @@ namespace TableSmith.Services
         private static string BuildForeignKeyConstraint(
             TableDefinition table,
             ColumnDefinition column,
-            SqlDialect dialect)
+            SqlDialect dialect,
+            string schemaName)
         {
             var constraintName = $"FK_{table.TableName}_{column.ReferenceTableName}_{column.ColumnName}";
             return
                 $"CONSTRAINT {EscapeName(constraintName, dialect)} " +
                 $"FOREIGN KEY ({EscapeName(column.ColumnName, dialect)}) " +
-                $"REFERENCES {EscapeName(column.ReferenceTableName, dialect)} " +
+                $"REFERENCES {BuildQualifiedTableName(schemaName, column.ReferenceTableName, dialect)} " +
                 $"({EscapeName(column.ReferenceColumnName, dialect)})";
         }
 
@@ -338,6 +364,130 @@ namespace TableSmith.Services
                 SqlDialect.Oracle => $"\"{name.Replace("\"", "\"\"")}\"",
                 _ => name
             };
+        }
+
+        /// <summary>
+        /// スキーマ名を含むテーブル識別子を生成します。
+        /// </summary>
+        private static string BuildQualifiedTableName(
+            string schemaName,
+            string tableName,
+            SqlDialect dialect)
+        {
+            return string.IsNullOrWhiteSpace(schemaName)
+                ? EscapeName(tableName, dialect)
+                : $"{EscapeName(schemaName, dialect)}.{EscapeName(tableName, dialect)}";
+        }
+
+        /// <summary>
+        /// テーブル固有値を優先して有効なスキーマ名を取得します。
+        /// </summary>
+        private static string ResolveSchemaName(
+            TableDefinition table,
+            DatabaseSettings? databaseSettings)
+        {
+            if (!string.IsNullOrWhiteSpace(table.SchemaName))
+            {
+                return table.SchemaName.Trim();
+            }
+
+            return databaseSettings?.DefaultSchemaName?.Trim() ?? string.Empty;
+        }
+
+        /// <summary>
+        /// SQL Serverの拡張プロパティで必要となる既定スキーマ名を返します。
+        /// </summary>
+        private static string DefaultSchema(string schemaName)
+        {
+            return string.IsNullOrWhiteSpace(schemaName) ? "dbo" : schemaName;
+        }
+
+        /// <summary>
+        /// RDBごとの自動採番句をカラム定義へ追加します。
+        /// </summary>
+        private static void AppendIdentityClause(
+            StringBuilder builder,
+            ColumnDefinition column,
+            SqlDialect dialect)
+        {
+            if (!column.IsIdentity)
+            {
+                return;
+            }
+
+            switch (dialect)
+            {
+                case SqlDialect.SqlServer:
+                    builder.Append(
+                        $" IDENTITY({column.IdentitySeed ?? 1},{column.IdentityIncrement ?? 1})");
+                    break;
+                case SqlDialect.MySql:
+                    builder.Append(" AUTO_INCREMENT");
+                    break;
+                case SqlDialect.Oracle:
+                    builder.Append(" GENERATED BY DEFAULT AS IDENTITY");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// MySQL向けの文字コードと照合順序をCREATE TABLE末尾へ追加します。
+        /// </summary>
+        private static void AppendMySqlTableOptions(
+            StringBuilder builder,
+            TableDefinition table,
+            DatabaseSettings? databaseSettings)
+        {
+            var characterSet = string.IsNullOrWhiteSpace(table.CharacterSet)
+                ? databaseSettings?.DefaultCharacterSet
+                : table.CharacterSet;
+            var collation = string.IsNullOrWhiteSpace(table.Collation)
+                ? databaseSettings?.DefaultCollation
+                : table.Collation;
+
+            if (!string.IsNullOrWhiteSpace(characterSet))
+            {
+                builder.Append($" DEFAULT CHARACTER SET {characterSet.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(collation))
+            {
+                builder.Append($" COLLATE {collation.Trim()}");
+            }
+        }
+
+        /// <summary>
+        /// CREATE TABLE文に続けてインデックス作成文を出力します。
+        /// </summary>
+        private static void AppendIndexes(
+            StringBuilder builder,
+            TableDefinition table,
+            SqlDialect dialect,
+            string schemaName)
+        {
+            foreach (var index in table.Indexes.Where(item => item.Columns.Count > 0))
+            {
+                builder.AppendLine();
+                builder.Append("CREATE ");
+                if (index.IsUnique)
+                {
+                    builder.Append("UNIQUE ");
+                }
+                if (dialect == SqlDialect.SqlServer && index.IsClustered)
+                {
+                    builder.Append("CLUSTERED ");
+                }
+
+                builder.Append($"INDEX {EscapeName(index.IndexName, dialect)}");
+                builder.AppendLine();
+                builder.Append($"ON {BuildQualifiedTableName(schemaName, table.TableName, dialect)} (");
+                builder.Append(string.Join(
+                    ", ",
+                    index.Columns.Select(column =>
+                        $"{EscapeName(column.ColumnName, dialect)} " +
+                        $"{(column.IsDescending ? "DESC" : "ASC")}")));
+                builder.AppendLine(");");
+            }
         }
 
         /// <summary>
@@ -387,6 +537,50 @@ namespace TableSmith.Services
                 {
                     throw new InvalidOperationException(
                         $"{column.No}行目の外部キー参照先が未設定です。テーブルを編集して参照PKを選択してください。");
+                }
+            }
+
+            ValidateIndexes(table);
+        }
+
+        /// <summary>
+        /// SQL生成前にインデックス定義の必須値と参照カラムを確認します。
+        /// </summary>
+        private static void ValidateIndexes(TableDefinition table)
+        {
+            var indexNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var columnNames = table.Columns
+                .Select(column => column.ColumnName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var index in table.Indexes)
+            {
+                if (string.IsNullOrWhiteSpace(index.IndexName))
+                {
+                    throw new InvalidOperationException("インデックス名が未設定です。");
+                }
+                if (!indexNames.Add(index.IndexName))
+                {
+                    throw new InvalidOperationException($"インデックス名 '{index.IndexName}' が重複しています。");
+                }
+                if (index.Columns.Count == 0)
+                {
+                    continue;
+                }
+
+                var usedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var indexColumn in index.Columns)
+                {
+                    if (!columnNames.Contains(indexColumn.ColumnName))
+                    {
+                        throw new InvalidOperationException(
+                            $"インデックス '{index.IndexName}' のカラム '{indexColumn.ColumnName}' は存在しません。");
+                    }
+                    if (!usedColumns.Add(indexColumn.ColumnName))
+                    {
+                        throw new InvalidOperationException(
+                            $"インデックス '{index.IndexName}' でカラム '{indexColumn.ColumnName}' が重複しています。");
+                    }
                 }
             }
         }

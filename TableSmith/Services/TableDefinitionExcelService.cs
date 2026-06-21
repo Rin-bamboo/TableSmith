@@ -21,13 +21,22 @@ namespace TableSmith.Services
             "既定値",
             "参照テーブル",
             "参照カラム",
-            "説明"
+            "説明",
+            "精度",
+            "小数桁数",
+            "自動採番",
+            "保護対象",
+            "保護方式"
         };
 
         /// <summary>
         /// 指定されたテーブル一覧を1つのExcelファイルへ出力します。
         /// </summary>
-        public void Export(string filePath, string projectName, IEnumerable<TableDefinition> tables)
+        public void Export(
+            string filePath,
+            string projectName,
+            IEnumerable<TableDefinition> tables,
+            DatabaseSettings? databaseSettings = null)
         {
             var tableList = tables.ToList();
             if (tableList.Count == 0)
@@ -40,14 +49,16 @@ namespace TableSmith.Services
 
             var usedSheetNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "テーブル一覧"
+                "テーブル一覧",
+                "インデックス一覧"
             };
 
             foreach (var table in tableList)
             {
-                AddTableDefinitionSheet(workbook, table, usedSheetNames);
+                AddTableDefinitionSheet(workbook, table, usedSheetNames, databaseSettings);
             }
 
+            AddIndexListSheet(workbook, tableList);
             workbook.SaveAs(filePath);
         }
 
@@ -115,33 +126,41 @@ namespace TableSmith.Services
         private static void AddTableDefinitionSheet(
             XLWorkbook workbook,
             TableDefinition table,
-            ISet<string> usedSheetNames)
+            ISet<string> usedSheetNames,
+            DatabaseSettings? databaseSettings)
         {
             var sheetName = CreateUniqueSheetName(table.TableName, usedSheetNames);
             var sheet = workbook.Worksheets.Add(sheetName);
 
             sheet.Cell("A1").Value = "テーブル定義書";
-            sheet.Range("A1:L1").Merge();
-            sheet.Range("A1:L1").Style
+            sheet.Range(1, 1, 1, ColumnHeaders.Length).Merge();
+            sheet.Range(1, 1, 1, ColumnHeaders.Length).Style
                 .Font.SetBold()
                 .Font.SetFontSize(18)
                 .Font.SetFontColor(XLColor.White);
-            sheet.Range("A1:L1").Style.Fill.SetBackgroundColor(XLColor.FromHtml("#1F4E78"));
-            sheet.Range("A1:L1").Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+            sheet.Range(1, 1, 1, ColumnHeaders.Length).Style.Fill.SetBackgroundColor(XLColor.FromHtml("#1F4E78"));
+            sheet.Range(1, 1, 1, ColumnHeaders.Length).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
 
             sheet.Cell("A3").Value = "テーブル物理名";
             sheet.Cell("B3").Value = table.TableName;
             sheet.Cell("E3").Value = "テーブル論理名";
             sheet.Cell("F3").Value = table.TableDisplayName;
-            sheet.Cell("A4").Value = "説明";
-            sheet.Range("B4:L4").Merge();
-            sheet.Cell("B4").Value = table.Description;
-            sheet.Range("A3:A4").Style.Font.SetBold();
-            sheet.Cell("E3").Style.Font.SetBold();
-            sheet.Range("A3:L4").Style.Fill.SetBackgroundColor(XLColor.FromHtml("#D9EAF7"));
-            ApplyTableBorder(sheet.Range("A3:L4"));
+            sheet.Cell("A4").Value = "スキーマ名";
+            sheet.Cell("B4").Value = ResolveSetting(table.SchemaName, databaseSettings?.DefaultSchemaName);
+            sheet.Cell("E4").Value = "文字コード";
+            sheet.Cell("F4").Value = ResolveSetting(table.CharacterSet, databaseSettings?.DefaultCharacterSet);
+            sheet.Cell("I4").Value = "照合順序";
+            sheet.Cell("J4").Value = ResolveSetting(table.Collation, databaseSettings?.DefaultCollation);
+            sheet.Cell("A5").Value = "説明";
+            sheet.Range(5, 2, 5, ColumnHeaders.Length).Merge();
+            sheet.Cell("B5").Value = table.Description;
+            sheet.Range("A3:A5").Style.Font.SetBold();
+            sheet.Range("E3:E4").Style.Font.SetBold();
+            sheet.Cell("I4").Style.Font.SetBold();
+            sheet.Range(3, 1, 5, ColumnHeaders.Length).Style.Fill.SetBackgroundColor(XLColor.FromHtml("#D9EAF7"));
+            ApplyTableBorder(sheet.Range(3, 1, 5, ColumnHeaders.Length));
 
-            var headerRow = 6;
+            var headerRow = 7;
             for (var index = 0; index < ColumnHeaders.Length; index++)
             {
                 sheet.Cell(headerRow, index + 1).Value = ColumnHeaders[index];
@@ -166,6 +185,17 @@ namespace TableSmith.Services
                 sheet.Cell(row, 10).Value = column.ReferenceTableName;
                 sheet.Cell(row, 11).Value = column.ReferenceColumnName;
                 sheet.Cell(row, 12).Value = column.Description;
+                if (column.Precision.HasValue)
+                {
+                    sheet.Cell(row, 13).Value = column.Precision.Value;
+                }
+                if (column.Scale.HasValue)
+                {
+                    sheet.Cell(row, 14).Value = column.Scale.Value;
+                }
+                sheet.Cell(row, 15).Value = column.IsIdentity ? "○" : string.Empty;
+                sheet.Cell(row, 16).Value = column.IsProtected ? "○" : string.Empty;
+                sheet.Cell(row, 17).Value = column.ProtectionType;
                 row++;
             }
 
@@ -177,10 +207,84 @@ namespace TableSmith.Services
             {
                 sheet.Range(headerRow + 1, 6, row - 1, 8).Style.Alignment
                     .SetHorizontal(XLAlignmentHorizontalValues.Center);
+                sheet.Range(headerRow + 1, 15, row - 1, 16).Style.Alignment
+                    .SetHorizontal(XLAlignmentHorizontalValues.Center);
             }
 
             sheet.SheetView.FreezeRows(headerRow);
             SetDefinitionColumnWidths(sheet);
+        }
+
+        /// <summary>
+        /// テーブル固有値が未設定の場合にプロジェクトの既定値を返します。
+        /// </summary>
+        private static string ResolveSetting(string tableValue, string? defaultValue)
+        {
+            return string.IsNullOrWhiteSpace(tableValue)
+                ? defaultValue ?? string.Empty
+                : tableValue;
+        }
+
+        /// <summary>
+        /// 選択された全テーブルのインデックス定義を一覧シートへ出力します。
+        /// </summary>
+        private static void AddIndexListSheet(
+            XLWorkbook workbook,
+            IEnumerable<TableDefinition> tables)
+        {
+            var sheet = workbook.Worksheets.Add("インデックス一覧");
+            var headers = new[]
+            {
+                "No",
+                "テーブル物理名",
+                "インデックス名",
+                "Unique",
+                "Clustered",
+                "カラム一覧",
+                "説明"
+            };
+
+            sheet.Cell("A1").Value = "インデックス一覧";
+            sheet.Range("A1:G1").Merge();
+            sheet.Range("A1:G1").Style.Font.SetBold().Font.SetFontSize(18).Font.SetFontColor(XLColor.White);
+            sheet.Range("A1:G1").Style.Fill.SetBackgroundColor(XLColor.FromHtml("#1F4E78"));
+            sheet.Range("A1:G1").Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+
+            const int headerRow = 3;
+            for (var index = 0; index < headers.Length; index++)
+            {
+                sheet.Cell(headerRow, index + 1).Value = headers[index];
+            }
+            ApplyHeaderStyle(sheet.Range(headerRow, 1, headerRow, headers.Length));
+
+            var row = headerRow + 1;
+            var no = 1;
+            foreach (var table in tables)
+            {
+                foreach (var index in table.Indexes)
+                {
+                    sheet.Cell(row, 1).Value = no++;
+                    sheet.Cell(row, 2).Value = table.TableName;
+                    sheet.Cell(row, 3).Value = index.IndexName;
+                    sheet.Cell(row, 4).Value = index.IsUnique ? "○" : string.Empty;
+                    sheet.Cell(row, 5).Value = index.IsClustered ? "○" : string.Empty;
+                    sheet.Cell(row, 6).Value = string.Join(
+                        ", ",
+                        index.Columns.Select(column =>
+                            $"{column.ColumnName} {(column.IsDescending ? "DESC" : "ASC")}"));
+                    sheet.Cell(row, 7).Value = index.Description;
+                    row++;
+                }
+            }
+
+            ApplyTableBorder(sheet.Range(headerRow, 1, Math.Max(headerRow, row - 1), headers.Length));
+            sheet.SheetView.FreezeRows(headerRow);
+            var widths = new[] { 7d, 26d, 30d, 11d, 12d, 48d, 50d };
+            for (var index = 0; index < widths.Length; index++)
+            {
+                sheet.Column(index + 1).Width = widths[index];
+            }
+            sheet.Columns(2, 7).Style.Alignment.WrapText = true;
         }
 
         /// <summary>
@@ -244,13 +348,17 @@ namespace TableSmith.Services
         /// </summary>
         private static void SetDefinitionColumnWidths(IXLWorksheet sheet)
         {
-            var widths = new[] { 7d, 24d, 24d, 14d, 10d, 8d, 8d, 10d, 22d, 24d, 24d, 50d };
+            var widths = new[]
+            {
+                7d, 24d, 24d, 14d, 10d, 8d, 8d, 10d, 22d, 24d, 24d, 42d,
+                10d, 12d, 12d, 12d, 24d
+            };
             for (var index = 0; index < widths.Length; index++)
             {
                 sheet.Column(index + 1).Width = widths[index];
             }
 
-            sheet.Columns(2, 12).Style.Alignment.WrapText = true;
+            sheet.Columns(2, ColumnHeaders.Length).Style.Alignment.WrapText = true;
         }
     }
 }

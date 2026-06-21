@@ -18,7 +18,8 @@ namespace TableSmith.Services
         public int Export(
             string outputDirectory,
             IEnumerable<TableDefinition> tables,
-            SqlDialect dialect)
+            SqlDialect dialect,
+            DatabaseSettings? databaseSettings = null)
         {
             var tableList = tables.ToList();
             if (tableList.Count == 0)
@@ -33,13 +34,30 @@ namespace TableSmith.Services
             {
                 var fileName = CreateUniqueFileName(table.TableName, usedFileNames);
                 var filePath = Path.Combine(outputDirectory, fileName);
-                var sql = _createTableSqlService.Generate(table, dialect);
+                var sql = _createTableSqlService.Generate(table, dialect, databaseSettings);
 
-                // 日本語の論理名・説明を各SQLツールで扱いやすいUTF-8 BOM付きで保存します。
-                File.WriteAllText(filePath, sql, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                File.WriteAllText(
+                    filePath,
+                    sql,
+                    ResolveEncoding(databaseSettings?.SqlFileEncoding ?? SqlFileEncoding.Utf8Bom));
             }
 
             return tableList.Count;
+        }
+
+        /// <summary>
+        /// プロジェクト設定からSQLファイル出力用の文字コードを生成します。
+        /// </summary>
+        private static Encoding ResolveEncoding(SqlFileEncoding fileEncoding)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            return fileEncoding switch
+            {
+                SqlFileEncoding.Utf8NoBom => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                SqlFileEncoding.ShiftJis => Encoding.GetEncoding(932),
+                SqlFileEncoding.Utf16 => Encoding.Unicode,
+                _ => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true)
+            };
         }
 
         /// <summary>

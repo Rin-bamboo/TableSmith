@@ -258,9 +258,7 @@ namespace TableSmith.Services
                     new Point(layout.X + layout.Width, rowY));
 
                 var keyLabel = column.IsPrimaryKey ? "PK" : column.IsForeignKey ? "FK" : string.Empty;
-                var typeLabel = column.DataSize.HasValue
-                    ? $"{column.DataType}({column.DataSize.Value})"
-                    : column.DataType;
+                var typeLabel = BuildTypeLabel(column);
 
                 DrawText(drawing, keyLabel, new Point(layout.X + 8, rowY + 5), 10, new SolidColorBrush(Color.FromRgb(190, 62, 62)), FontWeights.Bold);
                 DrawText(drawing, column.ColumnName, new Point(layout.X + 40, rowY + 5), 10.5, Brushes.Black, FontWeights.Normal);
@@ -424,7 +422,7 @@ namespace TableSmith.Services
                 builder.AppendLine($"<line x1=\"{layout.X:0}\" y1=\"{rowY:0}\" x2=\"{layout.X + layout.Width:0}\" y2=\"{rowY:0}\" stroke=\"#dce2e8\" stroke-width=\"0.7\"/>");
 
                 var keyLabel = column.IsPrimaryKey ? "PK" : column.IsForeignKey ? "FK" : string.Empty;
-                var typeLabel = column.DataSize.HasValue ? $"{column.DataType}({column.DataSize.Value})" : column.DataType;
+                var typeLabel = BuildTypeLabel(column);
                 builder.AppendLine($"<text x=\"{layout.X + 8:0}\" y=\"{rowY + 17:0}\" font-family=\"Segoe UI, sans-serif\" font-size=\"10\" font-weight=\"700\" fill=\"#be3e3e\">{keyLabel}</text>");
                 builder.AppendLine($"<text x=\"{layout.X + 40:0}\" y=\"{rowY + 17:0}\" font-family=\"Segoe UI, sans-serif\" font-size=\"10.5\" fill=\"#111111\">{EscapeXml(column.ColumnName)}</text>");
                 builder.AppendLine($"<text x=\"{layout.X + 205:0}\" y=\"{rowY + 17:0}\" font-family=\"Segoe UI, sans-serif\" font-size=\"9.5\" fill=\"#555555\">{EscapeXml(typeLabel)}</text>");
@@ -434,6 +432,24 @@ namespace TableSmith.Services
         private static string EscapeXml(string value)
         {
             return WebUtility.HtmlEncode(value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// ER図表示用にdecimalの精度・小数桁数を含む型名を作成します。
+        /// </summary>
+        private static string BuildTypeLabel(ColumnDefinition column)
+        {
+            if (column.DataType.Equals("decimal", StringComparison.OrdinalIgnoreCase)
+                && column.Precision.HasValue)
+            {
+                return column.Scale.HasValue
+                    ? $"{column.DataType}({column.Precision.Value},{column.Scale.Value})"
+                    : $"{column.DataType}({column.Precision.Value})";
+            }
+
+            return column.DataSize.HasValue
+                ? $"{column.DataType}({column.DataSize.Value})"
+                : column.DataType;
         }
 
         private sealed record ErDiagramLayout(

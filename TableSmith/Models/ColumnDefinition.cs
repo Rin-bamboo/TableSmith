@@ -4,6 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace TableSmith.Models
 {
+    /// <summary>
+    /// テーブルに含まれる1カラム分の設計情報を表します。
+    /// </summary>
     public class ColumnDefinition : INotifyPropertyChanged
     {
         private bool _isForeignKey;
@@ -21,6 +24,13 @@ namespace TableSmith.Models
         private int? _dataSize;
         private bool _isPrimaryKey;
         private bool _isNotNull;
+        private int? _precision;
+        private int? _scale;
+        private bool _isIdentity;
+        private int? _identitySeed;
+        private int? _identityIncrement;
+        private bool _isProtected;
+        private string _protectionType = string.Empty;
 
         public int No
         {
@@ -93,6 +103,104 @@ namespace TableSmith.Models
                 }
 
                 _dataSize = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// decimal型などで使用する全体桁数です。
+        /// </summary>
+        public int? Precision
+        {
+            get => _precision;
+            set
+            {
+                if (_precision == value) return;
+                _precision = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// decimal型などで使用する小数桁数です。
+        /// </summary>
+        public int? Scale
+        {
+            get => _scale;
+            set
+            {
+                if (_scale == value) return;
+                _scale = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// RDBの自動採番機能を使用するカラムかどうかを表します。
+        /// </summary>
+        public bool IsIdentity
+        {
+            get => _isIdentity;
+            set
+            {
+                if (_isIdentity == value) return;
+                _isIdentity = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 自動採番の開始値です。
+        /// </summary>
+        public int? IdentitySeed
+        {
+            get => _identitySeed;
+            set
+            {
+                if (_identitySeed == value) return;
+                _identitySeed = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 自動採番の増分値です。
+        /// </summary>
+        public int? IdentityIncrement
+        {
+            get => _identityIncrement;
+            set
+            {
+                if (_identityIncrement == value) return;
+                _identityIncrement = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 暗号化・マスキングなどの保護対象かどうかを表します。
+        /// </summary>
+        public bool IsProtected
+        {
+            get => _isProtected;
+            set
+            {
+                if (_isProtected == value) return;
+                _isProtected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 保護方式の設計メモです。v0.3.0では実処理を行いません。
+        /// </summary>
+        public string ProtectionType
+        {
+            get => _protectionType;
+            set
+            {
+                if (_protectionType == value) return;
+                _protectionType = value;
                 OnPropertyChanged();
             }
         }

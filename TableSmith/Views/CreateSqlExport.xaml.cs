@@ -13,13 +13,17 @@ namespace TableSmith.Views
     {
         private readonly CreateTableSqlService _createTableSqlService = new();
         private readonly CreateSqlFileExportService _createSqlFileExportService = new();
+        private readonly DatabaseSettings _databaseSettings;
 
         public ObservableCollection<TableExportSelectionItem> SelectionItems { get; }
         public IReadOnlyList<SqlDialectOption> DialectOptions { get; }
         public SqlDialectOption SelectedDialectOption { get; set; }
 
-        public CreateSqlExport(IEnumerable<TableDefinition> tables)
+        public CreateSqlExport(
+            IEnumerable<TableDefinition> tables,
+            DatabaseSettings? databaseSettings = null)
         {
+            _databaseSettings = databaseSettings ?? new DatabaseSettings();
             this.SelectionItems = new ObservableCollection<TableExportSelectionItem>(
                 tables.Select(table => new TableExportSelectionItem(table)));
             this.DialectOptions = new[]
@@ -28,7 +32,8 @@ namespace TableSmith.Views
                 new SqlDialectOption { Dialect = SqlDialect.MySql, DisplayName = "MySQL" },
                 new SqlDialectOption { Dialect = SqlDialect.Oracle, DisplayName = "Oracle" }
             };
-            this.SelectedDialectOption = this.DialectOptions[0];
+            this.SelectedDialectOption = this.DialectOptions
+                .First(option => option.Dialect == _databaseSettings.DefaultDialect);
 
             InitializeComponent();
             this.DataContext = this;
@@ -78,7 +83,8 @@ namespace TableSmith.Views
             {
                 var sql = _createTableSqlService.GenerateAll(
                     selectedTables,
-                    this.SelectedDialectOption.Dialect);
+                    this.SelectedDialectOption.Dialect,
+                    _databaseSettings);
                 var preview = new SqlPreview(
                     sql,
                     $"TableSmith: CREATE TABLE - {this.SelectedDialectOption.DisplayName}")
@@ -122,7 +128,8 @@ namespace TableSmith.Views
                 var outputCount = _createSqlFileExportService.Export(
                     dialog.FolderName,
                     selectedTables,
-                    this.SelectedDialectOption.Dialect);
+                    this.SelectedDialectOption.Dialect,
+                    _databaseSettings);
 
                 MessageBox.Show(
                     $"{outputCount}件のSQLファイルを出力しました。\n保存先: {dialog.FolderName}",

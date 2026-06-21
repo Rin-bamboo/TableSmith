@@ -19,11 +19,34 @@ namespace TableSmith.Views
         private string? _currentProjectFilePath;
         private bool _hasUnsavedChanges;
         private string _projectName = string.Empty;
+        private DatabaseSettings _databaseSettings = new();
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public TableDefinition CurrentTable { get; set; } = new();
         public ObservableCollection<TableDefinition> Tables { get; } = new();
+        public IReadOnlyList<SqlDialect> SqlDialectValues { get; } = Enum.GetValues<SqlDialect>();
+        public IReadOnlyList<SqlFileEncoding> SqlFileEncodingValues { get; } = Enum.GetValues<SqlFileEncoding>();
+
+        /// <summary>
+        /// プロジェクト全体のDB基本設定です。
+        /// </summary>
+        public DatabaseSettings DatabaseSettings
+        {
+            get => _databaseSettings;
+            private set
+            {
+                if (_databaseSettings == value)
+                {
+                    return;
+                }
+
+                _databaseSettings.PropertyChanged -= DatabaseSettings_PropertyChanged;
+                _databaseSettings = value;
+                _databaseSettings.PropertyChanged += DatabaseSettings_PropertyChanged;
+                OnPropertyChanged();
+            }
+        }
 
         public string ProjectName
         {
@@ -43,6 +66,7 @@ namespace TableSmith.Views
 
         public MainWindow()
         {
+            _databaseSettings.PropertyChanged += DatabaseSettings_PropertyChanged;
             InitializeComponent();
             this.DataContext = this;
         }
@@ -60,6 +84,7 @@ namespace TableSmith.Views
             this.Tables.Clear();
             this.CurrentTable = new TableDefinition();
             this.ProjectName = string.Empty;
+            this.DatabaseSettings = new DatabaseSettings();
             this._currentProjectFilePath = null;
             this._hasUnsavedChanges = false;
         }
@@ -183,7 +208,10 @@ namespace TableSmith.Views
                 return;
             }
 
-            var exportWindow = new TableDefinitionExport(this.ProjectName, this.Tables)
+            var exportWindow = new TableDefinitionExport(
+                this.ProjectName,
+                this.Tables,
+                this.DatabaseSettings)
             {
                 Owner = this
             };
@@ -228,7 +256,7 @@ namespace TableSmith.Views
                 return;
             }
 
-            var exportWindow = new CreateSqlExport(this.Tables)
+            var exportWindow = new CreateSqlExport(this.Tables, this.DatabaseSettings)
             {
                 Owner = this
             };
@@ -306,8 +334,9 @@ namespace TableSmith.Views
         {
             return new TableSmithProject
             {
-                Version = 1,
+                Version = 2,
                 ProjectName = this.ProjectName,
+                DatabaseSettings = this.DatabaseSettings,
                 Tables = new ObservableCollection<TableDefinition>(this.Tables)
             };
         }
@@ -318,6 +347,7 @@ namespace TableSmith.Views
         private void LoadProject(TableSmithProject project)
         {
             this.ProjectName = project.ProjectName;
+            this.DatabaseSettings = project.DatabaseSettings;
             this.Tables.Clear();
             foreach (var table in project.Tables)
             {
@@ -372,6 +402,14 @@ namespace TableSmith.Views
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// DB基本設定の変更を未保存変更として記録します。
+        /// </summary>
+        private void DatabaseSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            _hasUnsavedChanges = true;
         }
     }
 }

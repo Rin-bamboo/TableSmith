@@ -15,12 +15,17 @@ namespace TableSmith.Views
     {
         private readonly TableDefinitionExcelService _tableDefinitionExcelService = new();
         private readonly string _projectName;
+        private readonly DatabaseSettings _databaseSettings;
 
         public ObservableCollection<TableExportSelectionItem> SelectionItems { get; }
 
-        public TableDefinitionExport(string projectName, IEnumerable<TableDefinition> tables)
+        public TableDefinitionExport(
+            string projectName,
+            IEnumerable<TableDefinition> tables,
+            DatabaseSettings? databaseSettings = null)
         {
             this._projectName = projectName;
+            this._databaseSettings = databaseSettings ?? new DatabaseSettings();
             this.SelectionItems = new ObservableCollection<TableExportSelectionItem>(
                 tables.Select(table => new TableExportSelectionItem(table)));
 
@@ -87,7 +92,11 @@ namespace TableSmith.Views
 
             try
             {
-                _tableDefinitionExcelService.Export(dialog.FileName, this._projectName, selectedTables);
+                _tableDefinitionExcelService.Export(
+                    dialog.FileName,
+                    this._projectName,
+                    selectedTables,
+                    this._databaseSettings);
                 MessageBox.Show("テーブル定義書を出力しました。", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.DialogResult = true;
                 this.Close();

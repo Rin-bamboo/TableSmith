@@ -7,8 +7,8 @@
                       mc:Ignorable="d"
                       Title="TableSmith: テーブル定義作成"
                       Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
-                      Height="650"
-                      Width="1100"
+                      Height="760"
+                      Width="1240"
                       MinHeight="560"
                       MinWidth="920"
                       WindowStartupLocation="CenterOwner"
@@ -24,6 +24,15 @@
         </Style>
         <Style x:Key="DescriptionInputStyle" TargetType="TextBox">
             <Setter Property="ToolTip" Value="テーブルの用途や補足説明を入力してください。" />
+        </Style>
+        <Style x:Key="SchemaInputStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="テーブルが所属するスキーマ名を入力します。空欄の場合はプロジェクトの既定値を使用します。" />
+        </Style>
+        <Style x:Key="CharacterSetInputStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="テーブル固有の文字コードを入力します。主にMySQLのCREATE文で使用します。" />
+        </Style>
+        <Style x:Key="CollationInputStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="テーブル固有の照合順序を入力します。空欄の場合はプロジェクトの既定値を使用します。" />
         </Style>
         <Style x:Key="ColumnNameCellStyle" TargetType="TextBox">
             <Setter Property="ToolTip" Value="データベース上のカラム名を入力してください。テーブル内で重複できません。" />
@@ -52,6 +61,18 @@
         <Style x:Key="ColumnDescriptionCellStyle" TargetType="TextBox">
             <Setter Property="ToolTip" Value="カラムの意味、入力ルール、補足説明を入力してください。" />
         </Style>
+        <Style x:Key="ColumnPrecisionCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="decimal型の全体桁数を1以上で入力します。" />
+        </Style>
+        <Style x:Key="ColumnScaleCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="decimal型の小数桁数を0以上、精度以下で入力します。" />
+        </Style>
+        <Style x:Key="IdentityValueCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="自動採番の開始値または増分値を1以上で入力します。未指定時は1です。" />
+        </Style>
+        <Style x:Key="ProtectionTypeCellStyle" TargetType="TextBox">
+            <Setter Property="ToolTip" Value="保護方式の設計メモを入力します。v0.3.0では実際の暗号化処理は行いません。" />
+        </Style>
     </Controls:MetroWindow.Resources>
 
     <DockPanel>
@@ -74,6 +95,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="140" />
@@ -88,8 +110,25 @@
                     <TextBlock Grid.Row="0" Grid.Column="2" Text="テーブル論理名" VerticalAlignment="Center" Margin="0,0,10,10" />
                     <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding CurrentTable.TableDisplayName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TableDisplayNameInputStyle}" Height="30" Margin="0,0,0,10" />
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="説明" VerticalAlignment="Top" Margin="0,4,10,0" />
-                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="スキーマ名" VerticalAlignment="Center" Margin="0,0,10,10" />
+                    <TextBox Grid.Row="1" Grid.Column="1"
+                             Text="{Binding CurrentTable.SchemaName, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource SchemaInputStyle}" Height="30" Margin="0,0,24,10" />
+                    <TextBlock Grid.Row="1" Grid.Column="2" Text="文字コード / 照合順序" VerticalAlignment="Center" Margin="0,0,10,10" />
+                    <Grid Grid.Row="1" Grid.Column="3" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding CurrentTable.CharacterSet, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource CharacterSetInputStyle}" Height="30" Margin="0,0,6,0" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding CurrentTable.Collation, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource CollationInputStyle}" Height="30" Margin="6,0,0,0" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="説明" VerticalAlignment="Top" Margin="0,4,10,0" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
                              Text="{Binding CurrentTable.Description, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource DescriptionInputStyle}"
                              AcceptsReturn="True"
@@ -107,6 +146,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                        <Button Content="インデックス定義" Width="130" Margin="0,0,16,0" Click="IndexDefinitionButton_Click" />
                         <Button Content="追加" Width="90" Margin="0,0,8,0" Click="AddColumnButton_Click" />
                         <Button Content="削除" Width="90" Click="RemoveColumnButton_Click" />
                     </StackPanel>
@@ -122,6 +162,7 @@
                               GridLinesVisibility="Horizontal"
                               RowHeaderWidth="0"
                               AlternatingRowBackground="#EEF4FB"
+                              HorizontalScrollBarVisibility="Auto"
                               SelectionMode="Single"
                               SelectionUnit="FullRow">
                         <DataGrid.Columns>
@@ -148,6 +189,8 @@
                                 </DataGridComboBoxColumn.ItemsSource>
                             </DataGridComboBoxColumn>
                             <DataGridTextColumn Header="サイズ" Binding="{Binding DataSize, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnSizeCellStyle}" Width="85" />
+                            <DataGridTextColumn Header="精度" Binding="{Binding Precision, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnPrecisionCellStyle}" Width="75" />
+                            <DataGridTextColumn Header="小数桁数" Binding="{Binding Scale, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnScaleCellStyle}" Width="85" />
                             <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="60" />
                             <DataGridCheckBoxColumn Header="Not Null" Binding="{Binding IsNotNull, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="85" />
                             <DataGridCheckBoxColumn Header="FK" Binding="{Binding IsForeignKey, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="60" />
@@ -169,6 +212,11 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
+                            <DataGridCheckBoxColumn Header="自動採番" Binding="{Binding IsIdentity, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="85" />
+                            <DataGridTextColumn Header="開始値" Binding="{Binding IdentitySeed, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource IdentityValueCellStyle}" Width="75" />
+                            <DataGridTextColumn Header="増分" Binding="{Binding IdentityIncrement, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource IdentityValueCellStyle}" Width="70" />
+                            <DataGridCheckBoxColumn Header="保護対象" Binding="{Binding IsProtected, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="85" />
+                            <DataGridTextColumn Header="保護方式" Binding="{Binding ProtectionType, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ProtectionTypeCellStyle}" Width="140" />
                             <DataGridTextColumn Header="既定値" Binding="{Binding DefaultValue, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnDefaultValueCellStyle}" Width="120" />
                             <DataGridTextColumn Header="説明" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" EditingElementStyle="{StaticResource ColumnDescriptionCellStyle}" Width="*" MinWidth="180" />
                         </DataGrid.Columns>

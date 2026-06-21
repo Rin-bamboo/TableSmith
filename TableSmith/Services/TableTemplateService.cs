@@ -23,6 +23,9 @@ namespace TableSmith.Services
                     DataType = "bigint",
                     IsPrimaryKey = true,
                     IsNotNull = true,
+                    IsIdentity = true,
+                    IdentitySeed = 1,
+                    IdentityIncrement = 1,
                     Description = "レコードを一意に識別する主キーです。"
                 },
                 new()

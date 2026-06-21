@@ -1,0 +1,93 @@
+<Controls:MetroWindow x:Class="TableSmith.Views.IndexDefinitionEdit"
+                      x:Name="RootWindow"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                      Title="TableSmith: インデックス定義"
+                      Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
+                      Height="650"
+                      Width="980"
+                      MinHeight="540"
+                      MinWidth="820"
+                      WindowStartupLocation="CenterOwner"
+                      GlowBrush="DeepSkyBlue"
+                      BorderThickness="1"
+                      Background="#F7F9FC">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <GroupBox Header="インデックス一覧" Padding="12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                    <Button Content="追加" Width="90" Margin="0,0,8,0" Click="AddIndexButton_Click" />
+                    <Button Content="削除" Width="90" Click="RemoveIndexButton_Click" />
+                </StackPanel>
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding Indexes}"
+                          SelectedItem="{Binding SelectedIndex}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          RowHeaderWidth="0"
+                          AlternatingRowBackground="#EEF4FB">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="インデックス名"
+                                            Binding="{Binding IndexName, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="240" />
+                        <DataGridCheckBoxColumn Header="Unique"
+                                               Binding="{Binding IsUnique, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="85" />
+                        <DataGridCheckBoxColumn Header="Clustered"
+                                               Binding="{Binding IsClustered, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="95" />
+                        <DataGridTextColumn Header="説明"
+                                            Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Grid.Row="1" Header="対象カラム" Padding="12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                    <Button Content="追加" Width="90" Margin="0,0,8,0" Click="AddIndexColumnButton_Click" />
+                    <Button Content="削除" Width="90" Click="RemoveIndexColumnButton_Click" />
+                </StackPanel>
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding SelectedIndex.Columns}"
+                          SelectedItem="{Binding SelectedIndexColumn}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          RowHeaderWidth="0"
+                          AlternatingRowBackground="#EEF4FB">
+                    <DataGrid.Columns>
+                        <DataGridComboBoxColumn x:Name="IndexColumnNameColumn"
+                                                Header="カラム名"
+                                                SelectedItemBinding="{Binding ColumnName, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="*" />
+                        <DataGridCheckBoxColumn Header="降順"
+                                               Binding="{Binding IsDescending, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="100" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="キャンセル" Width="100" Margin="0,0,8,0" Click="CancelButton_Click" />
+            <Button Content="確定" Width="100" Click="SaveButton_Click" />
+        </StackPanel>
+    </Grid>
+</Controls:MetroWindow>

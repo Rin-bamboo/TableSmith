@@ -102,6 +102,21 @@ namespace TableSmith.Views
         }
 
         /// <summary>
+        /// 現在のテーブルに対するインデックス定義画面を開きます。
+        /// </summary>
+        private void IndexDefinitionButton_Click(object sender, RoutedEventArgs e)
+        {
+            ColumnDataGrid.CommitEdit();
+            ColumnDataGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
+
+            var editor = new IndexDefinitionEdit(CurrentTable)
+            {
+                Owner = this
+            };
+            editor.ShowDialog();
+        }
+
+        /// <summary>
         /// 外部キー参照先が選択されたとき、参照PKの属性を現在のカラムへ反映します。
         /// </summary>
         private void ForeignKeyReferenceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -191,17 +206,28 @@ namespace TableSmith.Views
         private bool ValidateInputs()
         {
             var errors = new StringBuilder();
+            var warnings = new StringBuilder();
 
             ValidateTable(errors);
-            ValidateColumns(errors);
+            ValidateColumns(errors, warnings);
 
-            if (errors.Length == 0)
+            if (errors.Length > 0)
+            {
+                MessageBox.Show(errors.ToString(), "入力確認", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (warnings.Length == 0)
             {
                 return true;
             }
 
-            MessageBox.Show(errors.ToString(), "入力確認", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return false;
+            var result = MessageBox.Show(
+                warnings + Environment.NewLine + "この内容で保存しますか？",
+                "推奨設定の確認",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            return result == MessageBoxResult.Yes;
         }
 
         /// <summary>
@@ -212,6 +238,9 @@ namespace TableSmith.Views
             this.CurrentTable.TableName = this.CurrentTable.TableName.Trim();
             this.CurrentTable.TableDisplayName = this.CurrentTable.TableDisplayName.Trim();
             this.CurrentTable.Description = this.CurrentTable.Description.Trim();
+            this.CurrentTable.SchemaName = this.CurrentTable.SchemaName.Trim();
+            this.CurrentTable.CharacterSet = this.CurrentTable.CharacterSet.Trim();
+            this.CurrentTable.Collation = this.CurrentTable.Collation.Trim();
 
             if (string.IsNullOrWhiteSpace(this.CurrentTable.TableName))
             {
@@ -237,7 +266,7 @@ namespace TableSmith.Views
         /// <summary>
         /// カラム必須項目、名前重複、サイズ、PK/FK制約の入力チェックを行います。
         /// </summary>
-        private void ValidateColumns(StringBuilder errors)
+        private void ValidateColumns(StringBuilder errors, StringBuilder warnings)
         {
             var columnNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -256,6 +285,7 @@ namespace TableSmith.Views
                 column.DataType = column.DataType.Trim();
                 column.DefaultValue = column.DefaultValue.Trim();
                 column.Description = column.Description.Trim();
+                column.ProtectionType = column.ProtectionType.Trim();
 
                 if (string.IsNullOrWhiteSpace(column.ColumnName))
                 {
@@ -287,6 +317,45 @@ namespace TableSmith.Views
                 if (column.DataSize.HasValue && column.DataSize.Value <= 0)
                 {
                     errors.AppendLine($"・{rowName}: サイズは1以上で入力してください。");
+                }
+
+                if (column.Precision.HasValue && column.Precision.Value < 1)
+                {
+                    errors.AppendLine($"・{rowName}: 精度は1以上で入力してください。");
+                }
+
+                if (column.Scale.HasValue && column.Scale.Value < 0)
+                {
+                    errors.AppendLine($"・{rowName}: 小数桁数は0以上で入力してください。");
+                }
+
+                if (column.Precision.HasValue
+                    && column.Scale.HasValue
+                    && column.Scale.Value > column.Precision.Value)
+                {
+                    errors.AppendLine($"・{rowName}: 小数桁数は精度以下で入力してください。");
+                }
+
+                if (column.DataType.Equals("decimal", StringComparison.OrdinalIgnoreCase)
+                    && !column.Precision.HasValue)
+                {
+                    errors.AppendLine($"・{rowName}: decimal型には精度を入力してください。");
+                }
+
+                if (column.IdentitySeed.HasValue && column.IdentitySeed.Value < 1)
+                {
+                    errors.AppendLine($"・{rowName}: 自動採番の開始値は1以上で入力してください。");
+                }
+
+                if (column.IdentityIncrement.HasValue && column.IdentityIncrement.Value < 1)
+                {
+                    errors.AppendLine($"・{rowName}: 自動採番の増分は1以上で入力してください。");
+                }
+
+                if (column.IsIdentity
+                    && (!column.IsPrimaryKey || !IsNumericType(column.DataType)))
+                {
+                    warnings.AppendLine($"・{rowName}: 自動採番カラムはPKかつ数値型にすることを推奨します。");
                 }
 
                 if (RequiresSize(column.DataType) && !column.DataSize.HasValue)
@@ -416,8 +485,13 @@ namespace TableSmith.Views
                 TableName = source.TableName,
                 TableDisplayName = source.TableDisplayName,
                 Description = source.Description,
+                SchemaName = source.SchemaName,
+                CharacterSet = source.CharacterSet,
+                Collation = source.Collation,
                 Columns = new ObservableCollection<ColumnDefinition>(
-                    source.Columns.Select(CloneColumn))
+                    source.Columns.Select(CloneColumn)),
+                Indexes = new ObservableCollection<IndexDefinition>(
+                    source.Indexes.Select(IndexDefinitionEdit.CloneIndex))
             };
         }
 
@@ -429,8 +503,13 @@ namespace TableSmith.Views
             target.TableName = source.TableName;
             target.TableDisplayName = source.TableDisplayName;
             target.Description = source.Description;
+            target.SchemaName = source.SchemaName;
+            target.CharacterSet = source.CharacterSet;
+            target.Collation = source.Collation;
             target.Columns = new ObservableCollection<ColumnDefinition>(
                 source.Columns.Select(CloneColumn));
+            target.Indexes = new ObservableCollection<IndexDefinition>(
+                source.Indexes.Select(IndexDefinitionEdit.CloneIndex));
         }
 
         /// <summary>
@@ -454,6 +533,8 @@ namespace TableSmith.Views
                 ColumnDisplayName = source.ColumnDisplayName,
                 DataType = source.DataType,
                 DataSize = source.DataSize,
+                Precision = source.Precision,
+                Scale = source.Scale,
                 IsPrimaryKey = source.IsPrimaryKey,
                 IsNotNull = source.IsNotNull,
                 IsForeignKey = source.IsForeignKey,
@@ -461,6 +542,11 @@ namespace TableSmith.Views
                 ReferenceTableName = source.ReferenceTableName,
                 ReferenceColumnName = source.ReferenceColumnName,
                 AutoForeignKeyColumnName = source.AutoForeignKeyColumnName,
+                IsIdentity = source.IsIdentity,
+                IdentitySeed = source.IdentitySeed,
+                IdentityIncrement = source.IdentityIncrement,
+                IsProtected = source.IsProtected,
+                ProtectionType = source.ProtectionType,
                 DefaultValue = source.DefaultValue,
                 Description = source.Description
             };
@@ -502,6 +588,8 @@ namespace TableSmith.Views
             column.ColumnDisplayName = referencedColumn.ColumnDisplayName;
             column.DataType = referencedColumn.DataType;
             column.DataSize = referencedColumn.DataSize;
+            column.Precision = referencedColumn.Precision;
+            column.Scale = referencedColumn.Scale;
             column.IsNotNull = referencedColumn.IsNotNull;
             column.ReferenceTableName = reference.TableName;
             column.ReferenceColumnName = reference.ColumnName;
@@ -516,7 +604,16 @@ namespace TableSmith.Views
             return dataType.Equals("char", StringComparison.OrdinalIgnoreCase)
                 || dataType.Equals("nchar", StringComparison.OrdinalIgnoreCase)
                 || dataType.Equals("varchar", StringComparison.OrdinalIgnoreCase)
-                || dataType.Equals("nvarchar", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("nvarchar", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 自動採番に適した数値型かどうかを判定します。
+        /// </summary>
+        private static bool IsNumericType(string dataType)
+        {
+            return dataType.Equals("bigint", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("int", StringComparison.OrdinalIgnoreCase)
                 || dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase);
         }
     }

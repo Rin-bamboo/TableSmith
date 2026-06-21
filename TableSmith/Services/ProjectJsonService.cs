@@ -10,6 +10,8 @@ namespace TableSmith.Services
     /// </summary>
     public class ProjectJsonService
     {
+        private readonly ProjectMigrationService _migrationService = new();
+
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
@@ -21,6 +23,7 @@ namespace TableSmith.Services
         /// </summary>
         public void Save(string filePath, TableSmithProject project)
         {
+            _migrationService.Migrate(project);
             var directory = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrWhiteSpace(directory))
             {
@@ -37,8 +40,9 @@ namespace TableSmith.Services
         public TableSmithProject Load(string filePath)
         {
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<TableSmithProject>(json, JsonOptions)
+            var project = JsonSerializer.Deserialize<TableSmithProject>(json, JsonOptions)
                 ?? throw new InvalidDataException("プロジェクトJSONを読み込めませんでした。");
+            return _migrationService.Migrate(project);
         }
     }
 }
