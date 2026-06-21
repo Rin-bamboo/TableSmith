@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using MahApps.Metro.Controls;
 using TableSmith.Models;
+using TableSmith.Services;
 
 namespace TableSmith.Views
 {
@@ -57,6 +59,10 @@ namespace TableSmith.Views
             _table = table;
             Indexes = new ObservableCollection<IndexDefinition>(
                 table.Indexes.Select(CloneIndex));
+            foreach (var index in Indexes)
+            {
+                SubscribeIndex(index);
+            }
             AvailableColumnNames = table.Columns
                 .OrderBy(column => column.No)
                 .Select(column => column.ColumnName)
@@ -74,7 +80,20 @@ namespace TableSmith.Views
         /// </summary>
         private void AddIndexButton_Click(object sender, RoutedEventArgs e)
         {
-            var index = new IndexDefinition();
+            var index = new IndexDefinition
+            {
+                IsNameCustomized = false
+            };
+            if (AvailableColumnNames.Count > 0)
+            {
+                index.Columns.Add(new IndexColumnDefinition
+                {
+                    ColumnName = AvailableColumnNames[0]
+                });
+            }
+
+            SubscribeIndex(index);
+            UpdateStandardIndexName(index);
             Indexes.Add(index);
             SelectedIndex = index;
         }
@@ -90,6 +109,7 @@ namespace TableSmith.Views
                 return;
             }
 
+            UnsubscribeIndex(SelectedIndex);
             Indexes.Remove(SelectedIndex);
             SelectedIndex = Indexes.FirstOrDefault();
         }
@@ -111,6 +131,7 @@ namespace TableSmith.Views
             };
             SelectedIndex.Columns.Add(column);
             SelectedIndexColumn = column;
+            UpdateStandardIndexName(SelectedIndex);
         }
 
         /// <summary>
@@ -126,6 +147,18 @@ namespace TableSmith.Views
 
             SelectedIndex.Columns.Remove(SelectedIndexColumn);
             SelectedIndexColumn = SelectedIndex.Columns.FirstOrDefault();
+            UpdateStandardIndexName(SelectedIndex);
+        }
+
+        /// <summary>
+        /// カスタム名を解除したとき、現在の対象カラムから標準名を再生成します。
+        /// </summary>
+        private void CustomNameCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (SelectedIndex != null && !SelectedIndex.IsNameCustomized)
+            {
+                UpdateStandardIndexName(SelectedIndex);
+            }
         }
 
         /// <summary>
@@ -156,6 +189,7 @@ namespace TableSmith.Views
 
             foreach (var index in Indexes)
             {
+                UpdateStandardIndexName(index);
                 index.IndexName = index.IndexName.Trim();
                 index.Description = index.Description.Trim();
 
@@ -208,6 +242,7 @@ namespace TableSmith.Views
             return new IndexDefinition
             {
                 IndexName = source.IndexName,
+                IsNameCustomized = source.IsNameCustomized,
                 IsUnique = source.IsUnique,
                 IsClustered = source.IsClustered,
                 Description = source.Description,
@@ -218,6 +253,87 @@ namespace TableSmith.Views
                         IsDescending = column.IsDescending
                     }))
             };
+        }
+
+        /// <summary>
+        /// 対象カラムの追加・削除・名称変更を監視し、標準名へ反映します。
+        /// </summary>
+        private void SubscribeIndex(IndexDefinition index)
+        {
+            index.Columns.CollectionChanged += IndexColumns_CollectionChanged;
+            foreach (var column in index.Columns)
+            {
+                column.PropertyChanged += IndexColumn_PropertyChanged;
+            }
+        }
+
+        private void UnsubscribeIndex(IndexDefinition index)
+        {
+            index.Columns.CollectionChanged -= IndexColumns_CollectionChanged;
+            foreach (var column in index.Columns)
+            {
+                column.PropertyChanged -= IndexColumn_PropertyChanged;
+            }
+        }
+
+        private void IndexColumns_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.OldItems != null)
+            {
+                foreach (IndexColumnDefinition column in e.OldItems)
+                {
+                    column.PropertyChanged -= IndexColumn_PropertyChanged;
+                }
+            }
+            if (e.NewItems != null)
+            {
+                foreach (IndexColumnDefinition column in e.NewItems)
+                {
+                    column.PropertyChanged += IndexColumn_PropertyChanged;
+                }
+            }
+
+            var index = Indexes.FirstOrDefault(item => ReferenceEquals(item.Columns, sender));
+            if (index != null)
+            {
+                UpdateStandardIndexName(index);
+            }
+        }
+
+        private void IndexColumn_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(IndexColumnDefinition.ColumnName))
+            {
+                return;
+            }
+
+            var changedColumn = sender as IndexColumnDefinition;
+            var index = changedColumn == null
+                ? null
+                : Indexes.FirstOrDefault(item => item.Columns.Contains(changedColumn));
+            if (index != null)
+            {
+                UpdateStandardIndexName(index);
+            }
+        }
+
+        /// <summary>
+        /// 一般的な命名規則 IX_テーブル名_カラム1_カラム2 で標準名を生成します。
+        /// </summary>
+        private void UpdateStandardIndexName(IndexDefinition index)
+        {
+            if (index.IsNameCustomized)
+            {
+                return;
+            }
+
+            var columnNames = index.Columns
+                .Select(column => column.ColumnName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
+            index.IndexName = IndexNamingService.CreateStandardName(
+                _table.TableName,
+                columnNames);
         }
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

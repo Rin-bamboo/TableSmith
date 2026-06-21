@@ -89,6 +89,8 @@ namespace TableSmith.Models
 
                 _dataType = value;
                 OnPropertyChanged();
+                NormalizeTypeDependentValues();
+                NotifyInputAvailabilityChanged();
             }
         }
 
@@ -97,12 +99,13 @@ namespace TableSmith.Models
             get => _dataSize;
             set
             {
-                if (_dataSize == value)
+                var normalizedValue = IsDataSizeEnabled ? value : null;
+                if (_dataSize == normalizedValue)
                 {
                     return;
                 }
 
-                _dataSize = value;
+                _dataSize = normalizedValue;
                 OnPropertyChanged();
             }
         }
@@ -115,8 +118,9 @@ namespace TableSmith.Models
             get => _precision;
             set
             {
-                if (_precision == value) return;
-                _precision = value;
+                var normalizedValue = IsPrecisionEnabled ? value : null;
+                if (_precision == normalizedValue) return;
+                _precision = normalizedValue;
                 OnPropertyChanged();
             }
         }
@@ -129,8 +133,9 @@ namespace TableSmith.Models
             get => _scale;
             set
             {
-                if (_scale == value) return;
-                _scale = value;
+                var normalizedValue = IsScaleEnabled ? value : null;
+                if (_scale == normalizedValue) return;
+                _scale = normalizedValue;
                 OnPropertyChanged();
             }
         }
@@ -143,9 +148,16 @@ namespace TableSmith.Models
             get => _isIdentity;
             set
             {
-                if (_isIdentity == value) return;
-                _isIdentity = value;
+                var normalizedValue = IsIdentityEnabled && value;
+                if (_isIdentity == normalizedValue) return;
+                _isIdentity = normalizedValue;
+                if (!_isIdentity)
+                {
+                    IdentitySeed = null;
+                    IdentityIncrement = null;
+                }
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(IsIdentityValueEnabled));
             }
         }
 
@@ -157,8 +169,9 @@ namespace TableSmith.Models
             get => _identitySeed;
             set
             {
-                if (_identitySeed == value) return;
-                _identitySeed = value;
+                var normalizedValue = IsIdentityValueEnabled ? value : null;
+                if (_identitySeed == normalizedValue) return;
+                _identitySeed = normalizedValue;
                 OnPropertyChanged();
             }
         }
@@ -171,8 +184,9 @@ namespace TableSmith.Models
             get => _identityIncrement;
             set
             {
-                if (_identityIncrement == value) return;
-                _identityIncrement = value;
+                var normalizedValue = IsIdentityValueEnabled ? value : null;
+                if (_identityIncrement == normalizedValue) return;
+                _identityIncrement = normalizedValue;
                 OnPropertyChanged();
             }
         }
@@ -187,7 +201,12 @@ namespace TableSmith.Models
             {
                 if (_isProtected == value) return;
                 _isProtected = value;
+                if (!_isProtected)
+                {
+                    ProtectionType = string.Empty;
+                }
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(IsProtectionTypeEnabled));
             }
         }
 
@@ -328,6 +347,96 @@ namespace TableSmith.Models
 
         public string DefaultValue { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 現在の型でサイズを入力できるかどうかを表します。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsDataSizeEnabled => IsStringType(DataType);
+
+        /// <summary>
+        /// 現在の型で精度を入力できるかどうかを表します。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsPrecisionEnabled => IsDecimalType(DataType);
+
+        /// <summary>
+        /// 現在の型で小数桁数を入力できるかどうかを表します。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsScaleEnabled => IsDecimalType(DataType);
+
+        /// <summary>
+        /// 現在の型で自動採番を設定できるかどうかを表します。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsIdentityEnabled => IsNumericType(DataType);
+
+        /// <summary>
+        /// 自動採番の開始値・増分値を入力できるかどうかを表します。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsIdentityValueEnabled => IsIdentityEnabled && IsIdentity;
+
+        /// <summary>
+        /// 保護方式を入力できるかどうかを表します。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsProtectionTypeEnabled => IsProtected;
+
+        /// <summary>
+        /// データ型変更後に使用しない設定値をクリアします。
+        /// </summary>
+        private void NormalizeTypeDependentValues()
+        {
+            if (!IsDataSizeEnabled)
+            {
+                DataSize = null;
+            }
+
+            if (!IsPrecisionEnabled)
+            {
+                Precision = null;
+                Scale = null;
+            }
+
+            if (!IsIdentityEnabled)
+            {
+                IsIdentity = false;
+            }
+        }
+
+        /// <summary>
+        /// DataGridの入力可否に関係する算出プロパティへ変更を通知します。
+        /// </summary>
+        private void NotifyInputAvailabilityChanged()
+        {
+            OnPropertyChanged(nameof(IsDataSizeEnabled));
+            OnPropertyChanged(nameof(IsPrecisionEnabled));
+            OnPropertyChanged(nameof(IsScaleEnabled));
+            OnPropertyChanged(nameof(IsIdentityEnabled));
+            OnPropertyChanged(nameof(IsIdentityValueEnabled));
+        }
+
+        private static bool IsStringType(string dataType)
+        {
+            return dataType.Equals("char", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("nchar", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("varchar", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("nvarchar", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsDecimalType(string dataType)
+        {
+            return dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsNumericType(string dataType)
+        {
+            return dataType.Equals("bigint", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("int", StringComparison.OrdinalIgnoreCase)
+                || dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase);
+        }
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {

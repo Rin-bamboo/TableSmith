@@ -16,14 +16,20 @@ namespace TableSmith.Views
         private static readonly Regex SqlNameRegex = new(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled);
 
         private readonly string? _editingOriginalTableName;
+        private readonly DatabaseSettings _databaseSettings;
 
         public TableDefinition CurrentTable { get; set; } = new();
         public ColumnDefinition? SelectedColumn { get; set; }
         public ObservableCollection<TableDefinition> ExistingTables { get; }
+        public ObservableCollection<SchemaDefinition> SchemaDefinitions => _databaseSettings.Schemas;
+        public IReadOnlyList<ConfigSelectionOption> CharacterSetOptions { get; private set; } =
+            Array.Empty<ConfigSelectionOption>();
+        public IReadOnlyList<ConfigSelectionOption> CollationOptions { get; private set; } =
+            Array.Empty<ConfigSelectionOption>();
         public ObservableCollection<ForeignKeyReference> ForeignKeyReferences { get; } = new();
 
         public TableCreate()
-            : this(new ObservableCollection<TableDefinition>())
+            : this(new ObservableCollection<TableDefinition>(), new DatabaseSettings())
         {
         }
 
@@ -32,8 +38,21 @@ namespace TableSmith.Views
         /// </summary>
         /// <param name="existingTables">外部キー候補や重複チェックに使う既存テーブル一覧。</param>
         public TableCreate(ObservableCollection<TableDefinition> existingTables)
+            : this(existingTables, new DatabaseSettings())
+        {
+        }
+
+        /// <summary>
+        /// テーブル新規作成用の画面をDB基本設定付きで初期化します。
+        /// </summary>
+        public TableCreate(
+            ObservableCollection<TableDefinition> existingTables,
+            DatabaseSettings databaseSettings)
         {
             this.ExistingTables = existingTables;
+            this._databaseSettings = databaseSettings;
+            this.CurrentTable.SchemaName = databaseSettings.DefaultSchemaName;
+            LoadConfigSelectionOptions();
             LoadForeignKeyReferences();
             InitializeComponent();
             this.DataContext = this;
@@ -46,9 +65,26 @@ namespace TableSmith.Views
         /// <param name="existingTables">外部キー候補や重複チェックに使う既存テーブル一覧。</param>
         /// <param name="tableToEdit">編集対象のテーブル。</param>
         public TableCreate(ObservableCollection<TableDefinition> existingTables, TableDefinition tableToEdit)
+            : this(existingTables, tableToEdit, new DatabaseSettings())
+        {
+        }
+
+        /// <summary>
+        /// テーブル編集用の画面をDB基本設定付きで初期化します。
+        /// </summary>
+        public TableCreate(
+            ObservableCollection<TableDefinition> existingTables,
+            TableDefinition tableToEdit,
+            DatabaseSettings databaseSettings)
         {
             this.ExistingTables = existingTables;
+            this._databaseSettings = databaseSettings;
             this.CurrentTable = CloneTable(tableToEdit);
+            if (string.IsNullOrWhiteSpace(this.CurrentTable.SchemaName))
+            {
+                this.CurrentTable.SchemaName = databaseSettings.DefaultSchemaName;
+            }
+            LoadConfigSelectionOptions();
             this._editingOriginalTableName = tableToEdit.TableName;
             LoadForeignKeyReferences();
             InitializeComponent();
@@ -63,7 +99,10 @@ namespace TableSmith.Views
         /// </summary>
         private void NewMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            this.CurrentTable = new TableDefinition();
+            this.CurrentTable = new TableDefinition
+            {
+                SchemaName = _databaseSettings.DefaultSchemaName
+            };
             LoadForeignKeyReferences();
             ApplyDefaultColumnsTemplate();
             this.DataContext = null;
@@ -87,6 +126,18 @@ namespace TableSmith.Views
         }
 
         /// <summary>
+        /// カラム設定項目の操作説明を直接表示します。
+        /// </summary>
+        private void ColumnHelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var guide = new OperationGuide("column-settings")
+            {
+                Owner = this
+            };
+            guide.ShowDialog();
+        }
+
+        /// <summary>
         /// 選択中のカラム入力行を削除し、行番号を振り直します。
         /// </summary>
         private void RemoveColumnButton_Click(object sender, RoutedEventArgs e)
@@ -99,21 +150,6 @@ namespace TableSmith.Views
 
             this.CurrentTable.Columns.Remove(this.SelectedColumn);
             RenumberColumns();
-        }
-
-        /// <summary>
-        /// 現在のテーブルに対するインデックス定義画面を開きます。
-        /// </summary>
-        private void IndexDefinitionButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColumnDataGrid.CommitEdit();
-            ColumnDataGrid.CommitEdit(System.Windows.Controls.DataGridEditingUnit.Row, true);
-
-            var editor = new IndexDefinitionEdit(CurrentTable)
-            {
-                Owner = this
-            };
-            editor.ShowDialog();
         }
 
         /// <summary>
@@ -260,6 +296,18 @@ namespace TableSmith.Views
             if (string.IsNullOrWhiteSpace(this.CurrentTable.TableDisplayName))
             {
                 errors.AppendLine("・テーブル論理名を入力してください。");
+            }
+
+            if (string.IsNullOrWhiteSpace(this.CurrentTable.SchemaName))
+            {
+                errors.AppendLine("・スキーマを選択してください。");
+            }
+            else if (!SchemaDefinitions.Any(schema =>
+                         schema.SchemaName.Equals(
+                             this.CurrentTable.SchemaName,
+                             StringComparison.OrdinalIgnoreCase)))
+            {
+                errors.AppendLine($"・スキーマ '{this.CurrentTable.SchemaName}' は登録されていません。");
             }
         }
 
@@ -615,6 +663,19 @@ namespace TableSmith.Views
             return dataType.Equals("bigint", StringComparison.OrdinalIgnoreCase)
                 || dataType.Equals("int", StringComparison.OrdinalIgnoreCase)
                 || dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// App.configからテーブル固有設定用の文字コード・照合順序候補を読み込みます。
+        /// </summary>
+        private void LoadConfigSelectionOptions()
+        {
+            CharacterSetOptions = ConfigSelectionService.GetCharacterSetOptions(
+                CurrentTable.CharacterSet,
+                includeEmpty: true);
+            CollationOptions = ConfigSelectionService.GetCollationOptions(
+                CurrentTable.Collation,
+                includeEmpty: true);
         }
     }
 }

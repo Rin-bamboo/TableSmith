@@ -14,6 +14,7 @@ namespace TableSmith.Views
     public partial class TableList : MetroWindow, INotifyPropertyChanged
     {
         private TableDefinition? _selectedTable;
+        private readonly DatabaseSettings _databaseSettings;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -35,9 +36,12 @@ namespace TableSmith.Views
             }
         }
 
-        public TableList(ObservableCollection<TableDefinition> tables)
+        public TableList(
+            ObservableCollection<TableDefinition> tables,
+            DatabaseSettings? databaseSettings = null)
         {
             InitializeComponent();
+            this._databaseSettings = databaseSettings ?? new DatabaseSettings();
             this.Tables = tables;
             this.SelectedTable = this.Tables.Count > 0 ? this.Tables[0] : null;
             this.DataContext = this;
@@ -62,7 +66,10 @@ namespace TableSmith.Views
                 return;
             }
 
-            var tableCreate = new TableCreate(this.Tables, this.SelectedTable)
+            var tableCreate = new TableCreate(
+                this.Tables,
+                this.SelectedTable,
+                this._databaseSettings)
             {
                 Owner = this
             };
@@ -75,6 +82,18 @@ namespace TableSmith.Views
             TableCreate.CopyTableValues(tableCreate.CurrentTable, this.SelectedTable);
             this.HasChanges = true;
             OnPropertyChanged(nameof(SelectedTable));
+        }
+
+        /// <summary>
+        /// カラム設定項目の操作説明を直接表示します。
+        /// </summary>
+        private void ColumnHelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var guide = new OperationGuide("column-settings")
+            {
+                Owner = this
+            };
+            guide.ShowDialog();
         }
 
         /// <summary>

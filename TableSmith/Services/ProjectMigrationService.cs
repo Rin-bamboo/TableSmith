@@ -19,6 +19,42 @@ namespace TableSmith.Services
             project.DatabaseSettings.DefaultSchemaName ??= "dbo";
             project.DatabaseSettings.DefaultCharacterSet ??= string.Empty;
             project.DatabaseSettings.DefaultCollation ??= string.Empty;
+            project.DatabaseSettings.Schemas ??= new ObservableCollection<SchemaDefinition>();
+
+            // 旧JSONの既定スキーマを新しいスキーマ一覧へ引き継ぎます。
+            if (string.IsNullOrWhiteSpace(project.DatabaseSettings.DefaultSchemaName))
+            {
+                project.DatabaseSettings.DefaultSchemaName = "dbo";
+            }
+            if (project.DatabaseSettings.Schemas.Count == 0)
+            {
+                project.DatabaseSettings.Schemas.Add(new SchemaDefinition
+                {
+                    SchemaName = project.DatabaseSettings.DefaultSchemaName,
+                    Description = project.DatabaseSettings.DefaultSchemaName.Equals(
+                        "dbo",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? "SQL Serverの標準スキーマです。"
+                        : string.Empty
+                });
+            }
+            else if (!project.DatabaseSettings.Schemas.Any(schema =>
+                         string.Equals(
+                             schema.SchemaName,
+                             project.DatabaseSettings.DefaultSchemaName,
+                             StringComparison.OrdinalIgnoreCase)))
+            {
+                project.DatabaseSettings.Schemas.Add(new SchemaDefinition
+                {
+                    SchemaName = project.DatabaseSettings.DefaultSchemaName
+                });
+            }
+
+            foreach (var schema in project.DatabaseSettings.Schemas)
+            {
+                schema.SchemaName ??= string.Empty;
+                schema.Description ??= string.Empty;
+            }
 
             foreach (var table in project.Tables)
             {

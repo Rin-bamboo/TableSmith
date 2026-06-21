@@ -30,6 +30,41 @@
                 <MenuItem Header="終了" Click="ExitMenuItem_Click" />
             </MenuItem>
             <MenuItem Header="ヘルプ">
+                <MenuItem Header="操作説明">
+                    <MenuItem Header="プロジェクトの保存・読込"
+                              Tag="project"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="DB基本設定"
+                              Tag="database-settings"
+                              Click="OperationGuideMenuItem_Click" />
+                    <Separator />
+                    <MenuItem Header="スキーマ管理"
+                              Tag="schema"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="テーブル定義作成"
+                              Tag="table-create"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="カラム設定項目"
+                              Tag="column-settings"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="テーブル一覧・編集"
+                              Tag="table-list"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="インデックス管理"
+                              Tag="index"
+                              Click="OperationGuideMenuItem_Click" />
+                    <Separator />
+                    <MenuItem Header="CREATE文出力"
+                              Tag="create-sql"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="テーブル定義書出力"
+                              Tag="definition"
+                              Click="OperationGuideMenuItem_Click" />
+                    <MenuItem Header="ER図出力"
+                              Tag="er-diagram"
+                              Click="OperationGuideMenuItem_Click" />
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="バージョン情報" Click="VersionInfoMenuItem_Click" />
             </MenuItem>
         </Menu>
@@ -37,6 +72,7 @@
         <Border DockPanel.Dock="Top" Margin="10,10,10,5" Padding="12" Background="#EEF4FB" BorderBrush="#B7CCE2" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -62,35 +98,57 @@
                           Height="30" Margin="0,10,20,0"
                           ToolTip="CREATE文出力画面で最初に選択されるRDBです。" />
                 <TextBlock Grid.Row="1" Grid.Column="2" Text="既定スキーマ" VerticalAlignment="Center" FontWeight="Bold" Margin="0,10,10,0" />
-                <TextBox Grid.Row="1" Grid.Column="3"
-                         Text="{Binding DatabaseSettings.DefaultSchemaName, UpdateSourceTrigger=PropertyChanged}"
-                         Height="30" Margin="0,10,0,0"
-                         ToolTip="テーブル側でスキーマを省略した場合に使用する既定スキーマ名です。" />
+                <ComboBox Grid.Row="1" Grid.Column="3"
+                          ItemsSource="{Binding DatabaseSettings.Schemas}"
+                          DisplayMemberPath="SchemaName"
+                          SelectedValuePath="SchemaName"
+                          SelectedValue="{Binding DatabaseSettings.DefaultSchemaName}"
+                          Height="30"
+                          Margin="0,10,0,0"
+                          ToolTip="登録済みスキーマからプロジェクトの既定スキーマを選択します。スキーマの追加・削除はメイン画面のスキーマ管理ボタンから行えます。" />
 
                 <TextBlock Grid.Row="2" Text="文字コード" VerticalAlignment="Center" FontWeight="Bold" Margin="0,10,10,0" />
-                <TextBox Grid.Row="2" Grid.Column="1"
-                         Text="{Binding DatabaseSettings.DefaultCharacterSet, UpdateSourceTrigger=PropertyChanged}"
-                         Height="30" Margin="0,10,20,0"
-                         ToolTip="主にMySQLのCREATE TABLE文で使用する既定文字コードです。" />
-                <Grid Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Margin="0,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="照合順序" VerticalAlignment="Center" FontWeight="Bold" />
-                    <TextBox Grid.Column="1"
-                             Text="{Binding DatabaseSettings.DefaultCollation, UpdateSourceTrigger=PropertyChanged}"
-                             Height="30" Margin="0,0,20,0"
-                             ToolTip="テーブル側で省略した場合に使用する既定の照合順序です。" />
-                    <TextBlock Grid.Column="2" Text="SQL文字コード" VerticalAlignment="Center" FontWeight="Bold" />
-                    <ComboBox Grid.Column="3"
-                              ItemsSource="{Binding SqlFileEncodingValues}"
-                              SelectedItem="{Binding DatabaseSettings.SqlFileEncoding}"
-                              Height="30"
-                              ToolTip="SQLファイルを書き出す際の文字コードです。" />
-                </Grid>
+                <ComboBox x:Name="CharacterSetComboBox"
+                          Grid.Row="2" Grid.Column="1"
+                          ItemsSource="{Binding CharacterSetOptions}"
+                          DisplayMemberPath="DisplayText"
+                          SelectedValuePath="Value"
+                          SelectedValue="{Binding DatabaseSettings.DefaultCharacterSet}"
+                          Height="30"
+                          Margin="0,10,20,0"
+                          ToolTip="App.configに定義された候補から、指定RDBで使用する既定文字コードを選択します。" />
+                <TextBlock Grid.Row="2"
+                           Grid.Column="2"
+                           Text="照合順序"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Margin="0,10,10,0" />
+                <ComboBox x:Name="CollationComboBox"
+                          Grid.Row="2"
+                          Grid.Column="3"
+                          ItemsSource="{Binding CollationOptions}"
+                          DisplayMemberPath="DisplayText"
+                          SelectedValuePath="Value"
+                          SelectedValue="{Binding DatabaseSettings.DefaultCollation}"
+                          Height="30"
+                          Margin="0,10,0,0"
+                          ToolTip="App.configに定義された候補から既定の照合順序を選択します。" />
+
+                <TextBlock Grid.Row="3"
+                           Text="SQL文字コード"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Margin="0,10,10,0" />
+                <ComboBox x:Name="SqlFileEncodingComboBox"
+                          Grid.Row="3"
+                          Grid.Column="1"
+                          ItemsSource="{Binding SqlFileEncodingOptions}"
+                          DisplayMemberPath="DisplayText"
+                          SelectedValuePath="Value"
+                          SelectedValue="{Binding DatabaseSettings.SqlFileEncoding}"
+                          Height="30"
+                          Margin="0,10,20,0"
+                          ToolTip="App.configに定義された候補からSQLファイルの文字コードを選択します。" />
             </Grid>
         </Border>
 
@@ -108,6 +166,38 @@
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                     <Image Source="pack://application:,,,/Resources/Images/List.png" Width="32" Height="32" Margin="0,5"/>
                     <Label Content="テーブル一覧" HorizontalAlignment="Center"  Background="Transparent" BorderBrush="Transparent"/>
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="ButtonSchemaManagement"
+                    Margin="5"
+                    Background="#DDEAF2"
+                    Click="ButtonSchemaManagement_Click">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/Images/List.png"
+                           Width="38"
+                           Height="38"
+                           Margin="0,5"/>
+                    <Label Content="スキーマ管理"
+                           HorizontalAlignment="Center"
+                           Background="Transparent"
+                           BorderBrush="Transparent" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="ButtonIndexManagement"
+                    Margin="5"
+                    Background="#E5E8D8"
+                    Click="ButtonIndexManagement_Click">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/Images/List.png"
+                           Width="38"
+                           Height="38"
+                           Margin="0,5"/>
+                    <Label Content="インデックス管理"
+                           HorizontalAlignment="Center"
+                           Background="Transparent"
+                           BorderBrush="Transparent" />
                 </StackPanel>
             </Button>
 

@@ -26,7 +26,12 @@ namespace TableSmith.Views
         public TableDefinition CurrentTable { get; set; } = new();
         public ObservableCollection<TableDefinition> Tables { get; } = new();
         public IReadOnlyList<SqlDialect> SqlDialectValues { get; } = Enum.GetValues<SqlDialect>();
-        public IReadOnlyList<SqlFileEncoding> SqlFileEncodingValues { get; } = Enum.GetValues<SqlFileEncoding>();
+        public IReadOnlyList<ConfigSelectionOption> CharacterSetOptions { get; private set; } =
+            Array.Empty<ConfigSelectionOption>();
+        public IReadOnlyList<ConfigSelectionOption> CollationOptions { get; private set; } =
+            Array.Empty<ConfigSelectionOption>();
+        public IReadOnlyList<SqlFileEncodingOption> SqlFileEncodingOptions { get; private set; } =
+            Array.Empty<SqlFileEncodingOption>();
 
         /// <summary>
         /// プロジェクト全体のDB基本設定です。
@@ -44,6 +49,10 @@ namespace TableSmith.Views
                 _databaseSettings.PropertyChanged -= DatabaseSettings_PropertyChanged;
                 _databaseSettings = value;
                 _databaseSettings.PropertyChanged += DatabaseSettings_PropertyChanged;
+
+                // 読み込んだ値がコンフィグ候補外でも失われないよう、
+                // DatabaseSettingsの変更通知より先に新しい値を含む候補一覧を準備します。
+                RefreshConfigSelectionOptions();
                 OnPropertyChanged();
             }
         }
@@ -67,6 +76,7 @@ namespace TableSmith.Views
         public MainWindow()
         {
             _databaseSettings.PropertyChanged += DatabaseSettings_PropertyChanged;
+            RefreshConfigSelectionOptions();
             InitializeComponent();
             this.DataContext = this;
         }
@@ -85,6 +95,7 @@ namespace TableSmith.Views
             this.CurrentTable = new TableDefinition();
             this.ProjectName = string.Empty;
             this.DatabaseSettings = new DatabaseSettings();
+            RefreshConfigSelectionOptions();
             this._currentProjectFilePath = null;
             this._hasUnsavedChanges = false;
         }
@@ -162,11 +173,68 @@ namespace TableSmith.Views
         }
 
         /// <summary>
+        /// 選択された機能の操作説明画面を表示します。
+        /// </summary>
+        private void OperationGuideMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var topicKey = (sender as System.Windows.Controls.MenuItem)?.Tag as string;
+            var operationGuide = new OperationGuide(topicKey)
+            {
+                Owner = this
+            };
+
+            operationGuide.ShowDialog();
+        }
+
+        /// <summary>
+        /// プロジェクトで使用するスキーマ一覧の管理画面を表示します。
+        /// </summary>
+        private void ButtonSchemaManagement_Click(object sender, RoutedEventArgs e)
+        {
+            var schemaManagement = new SchemaManagement(DatabaseSettings, Tables)
+            {
+                Owner = this
+            };
+
+            if (schemaManagement.ShowDialog() == true)
+            {
+                _hasUnsavedChanges = true;
+            }
+        }
+
+        /// <summary>
+        /// プロジェクト内テーブルのインデックスを管理する画面を表示します。
+        /// </summary>
+        private void ButtonIndexManagement_Click(object sender, RoutedEventArgs e)
+        {
+            if (Tables.Count == 0)
+            {
+                MessageBox.Show(
+                    "インデックスを設定するテーブルがありません。",
+                    "確認",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var indexManagement = new IndexManagement(Tables)
+            {
+                Owner = this
+            };
+
+            indexManagement.ShowDialog();
+            if (indexManagement.HasChanges)
+            {
+                _hasUnsavedChanges = true;
+            }
+        }
+
+        /// <summary>
         /// テーブル作成画面を開き、確定されたテーブルを現在のプロジェクトへ追加します。
         /// </summary>
         private void ButtonTableCreate_Click(object sender, RoutedEventArgs e)
         {
-            var tableCreate = new TableCreate(this.Tables)
+            var tableCreate = new TableCreate(this.Tables, this.DatabaseSettings)
             {
                 Owner = this
             };
@@ -185,7 +253,7 @@ namespace TableSmith.Views
         /// </summary>
         private void ButtonTableList_Click(object sender, RoutedEventArgs e)
         {
-            var tableList = new TableList(this.Tables)
+            var tableList = new TableList(this.Tables, this.DatabaseSettings)
             {
                 Owner = this
             };
@@ -346,15 +414,25 @@ namespace TableSmith.Views
         /// </summary>
         private void LoadProject(TableSmithProject project)
         {
-            this.ProjectName = project.ProjectName;
-            this.DatabaseSettings = project.DatabaseSettings;
-            this.Tables.Clear();
-            foreach (var table in project.Tables)
+            // ComboBoxが古い候補一覧を使って読込値を未選択へ戻さないよう、
+            // プロジェクト反映中はバインディングを一時的に切り離します。
+            this.DataContext = null;
+            try
             {
-                this.Tables.Add(table);
-            }
+                this.ProjectName = project.ProjectName;
+                this.DatabaseSettings = project.DatabaseSettings;
+                this.Tables.Clear();
+                foreach (var table in project.Tables)
+                {
+                    this.Tables.Add(table);
+                }
 
-            this.CurrentTable = this.Tables.FirstOrDefault() ?? new TableDefinition();
+                this.CurrentTable = this.Tables.FirstOrDefault() ?? new TableDefinition();
+            }
+            finally
+            {
+                this.DataContext = this;
+            }
         }
 
         /// <summary>
@@ -410,6 +488,27 @@ namespace TableSmith.Views
         private void DatabaseSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             _hasUnsavedChanges = true;
+        }
+
+        /// <summary>
+        /// App.configの定義と現在値から、画面表示用の選択肢を更新します。
+        /// </summary>
+        private void RefreshConfigSelectionOptions()
+        {
+            CharacterSetOptions = ConfigSelectionService.GetCharacterSetOptions(
+                DatabaseSettings.DefaultCharacterSet,
+                includeEmpty: true,
+                emptyDisplayName: "未設定");
+            CollationOptions = ConfigSelectionService.GetCollationOptions(
+                DatabaseSettings.DefaultCollation,
+                includeEmpty: true,
+                emptyDisplayName: "未設定");
+            SqlFileEncodingOptions = ConfigSelectionService.GetSqlFileEncodingOptions(
+                DatabaseSettings.SqlFileEncoding);
+
+            OnPropertyChanged(nameof(CharacterSetOptions));
+            OnPropertyChanged(nameof(CollationOptions));
+            OnPropertyChanged(nameof(SqlFileEncodingOptions));
         }
     }
 }

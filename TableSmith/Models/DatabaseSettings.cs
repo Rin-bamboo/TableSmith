@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 
 namespace TableSmith.Models
@@ -13,6 +14,15 @@ namespace TableSmith.Models
         private string _defaultCharacterSet = string.Empty;
         private string _defaultCollation = string.Empty;
         private SqlFileEncoding _sqlFileEncoding = SqlFileEncoding.Utf8Bom;
+        private ObservableCollection<SchemaDefinition> _schemas =
+            new()
+            {
+                new SchemaDefinition
+                {
+                    SchemaName = "dbo",
+                    Description = "SQL Serverの標準スキーマです。"
+                }
+            };
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -35,7 +45,16 @@ namespace TableSmith.Models
         }
 
         /// <summary>
-        /// 既定の文字コードです。主にMySQL向けに使用します。
+        /// プロジェクト内でテーブルへ割り当て可能なスキーマ一覧です。
+        /// </summary>
+        public ObservableCollection<SchemaDefinition> Schemas
+        {
+            get => _schemas;
+            set => SetField(ref _schemas, value);
+        }
+
+        /// <summary>
+        /// 指定RDBで使用する既定の文字コードです。
         /// </summary>
         public string DefaultCharacterSet
         {

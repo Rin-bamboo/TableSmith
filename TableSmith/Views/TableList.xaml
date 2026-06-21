@@ -15,6 +15,24 @@
                       GlowBrush="DeepSkyBlue"
                       BorderThickness="1"
                       Background="#F7F9FC">
+    <Controls:MetroWindow.Resources>
+        <Style x:Key="WrappingColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="6,5" />
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   LineHeight="16" />
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Controls:MetroWindow.Resources>
+
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="ファイル">
@@ -40,7 +58,9 @@
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
+                          CanUserSortColumns="False"
                           HeadersVisibility="Column"
+                          ColumnHeaderStyle="{StaticResource WrappingColumnHeaderStyle}"
                           GridLinesVisibility="Horizontal"
                           RowHeaderWidth="0"
                           SelectionMode="Single"
@@ -89,11 +109,29 @@
                 </GroupBox>
 
                 <GroupBox Grid.Row="1" Header="カラム情報" Padding="14">
-                    <DataGrid ItemsSource="{Binding SelectedTable.Columns}"
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Button Content="?"
+                                Width="32"
+                                Height="28"
+                                HorizontalAlignment="Right"
+                                Margin="0,0,0,10"
+                                FontWeight="Bold"
+                                Click="ColumnHelpButton_Click"
+                                ToolTip="カラム設定項目の説明を表示します。" />
+
+                        <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding SelectedTable.Columns}"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
+                              CanUserSortColumns="False"
                               HeadersVisibility="Column"
+                              ColumnHeaderStyle="{StaticResource WrappingColumnHeaderStyle}"
                               GridLinesVisibility="Horizontal"
                               RowHeaderWidth="0"
                               AlternatingRowBackground="#EEF4FB"
@@ -112,7 +150,8 @@
                             <DataGridTextColumn Header="既定値" Binding="{Binding DefaultValue}" Width="110" IsReadOnly="True" />
                             <DataGridTextColumn Header="説明" Binding="{Binding Description}" Width="*" MinWidth="160" IsReadOnly="True" />
                         </DataGrid.Columns>
-                    </DataGrid>
+                        </DataGrid>
+                    </Grid>
                 </GroupBox>
             </Grid>
 

@@ -5,7 +5,7 @@
                       xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
                       Title="TableSmith: インデックス定義"
                       Icon="pack://application:,,,/Resources/Images/TableSmith.ico"
-                      Height="650"
+                      Height="720"
                       Width="980"
                       MinHeight="540"
                       MinWidth="820"
@@ -15,7 +15,8 @@
                       Background="#F7F9FC">
     <Grid Margin="18">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
+            <RowDefinition Height="220" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -35,27 +36,78 @@
                           SelectedItem="{Binding SelectedIndex}"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
+                          CanUserDeleteRows="False"
                           RowHeaderWidth="0"
+                          SelectionMode="Single"
+                          SelectionUnit="FullRow"
                           AlternatingRowBackground="#EEF4FB">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="インデックス名"
-                                            Binding="{Binding IndexName, UpdateSourceTrigger=PropertyChanged}"
-                                            Width="240" />
+                                            Binding="{Binding IndexName}"
+                                            Width="260"
+                                            IsReadOnly="True" />
                         <DataGridCheckBoxColumn Header="Unique"
-                                               Binding="{Binding IsUnique, UpdateSourceTrigger=PropertyChanged}"
-                                               Width="85" />
+                                               Binding="{Binding IsUnique}"
+                                               Width="85"
+                                               IsReadOnly="True" />
                         <DataGridCheckBoxColumn Header="Clustered"
-                                               Binding="{Binding IsClustered, UpdateSourceTrigger=PropertyChanged}"
-                                               Width="95" />
+                                               Binding="{Binding IsClustered}"
+                                               Width="95"
+                                               IsReadOnly="True" />
                         <DataGridTextColumn Header="説明"
-                                            Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
-                                            Width="*" />
+                                            Binding="{Binding Description}"
+                                            Width="*"
+                                            IsReadOnly="True" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="1" Header="対象カラム" Padding="12" Margin="0,0,0,12">
+        <GroupBox Grid.Row="1" Header="インデックス設定" Padding="12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="110" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="インデックス名" VerticalAlignment="Center" FontWeight="Bold" />
+                <TextBox Grid.Column="1"
+                         Text="{Binding SelectedIndex.IndexName, UpdateSourceTrigger=PropertyChanged}"
+                         IsEnabled="{Binding SelectedIndex.IsNameCustomized}"
+                         Height="30"
+                         Margin="0,0,16,8"
+                         ToolTip="標準名は IX_テーブル名_カラム名 です。カスタム名を有効にすると任意の名前を入力できます。" />
+                <CheckBox Grid.Column="2"
+                          Content="カスタム名"
+                          IsChecked="{Binding SelectedIndex.IsNameCustomized, UpdateSourceTrigger=PropertyChanged}"
+                          VerticalAlignment="Center"
+                          Margin="0,0,12,8"
+                          Checked="CustomNameCheckBox_Changed"
+                          Unchecked="CustomNameCheckBox_Changed" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                    <CheckBox Content="Unique"
+                              IsChecked="{Binding SelectedIndex.IsUnique, UpdateSourceTrigger=PropertyChanged}"
+                              Margin="0,0,12,0" />
+                    <CheckBox Content="Clustered"
+                              IsChecked="{Binding SelectedIndex.IsClustered, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <TextBlock Grid.Row="1" Text="説明" VerticalAlignment="Center" FontWeight="Bold" />
+                <TextBox Grid.Row="1"
+                         Grid.Column="1"
+                         Grid.ColumnSpan="3"
+                         Text="{Binding SelectedIndex.Description, UpdateSourceTrigger=PropertyChanged}"
+                         Height="30" />
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Grid.Row="2" Header="対象カラム" Padding="12" Margin="0,0,0,12">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -85,7 +137,7 @@
             </Grid>
         </GroupBox>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="キャンセル" Width="100" Margin="0,0,8,0" Click="CancelButton_Click" />
             <Button Content="確定" Width="100" Click="SaveButton_Click" />
         </StackPanel>
