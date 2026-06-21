@@ -142,7 +142,7 @@
                             <DataGridTextColumn Header="物理名" Binding="{Binding ColumnName}" Width="150" IsReadOnly="True" />
                             <DataGridTextColumn Header="論理名" Binding="{Binding ColumnDisplayName}" Width="160" IsReadOnly="True" />
                             <DataGridTextColumn Header="型" Binding="{Binding DataType}" Width="120" IsReadOnly="True" />
-                            <DataGridTextColumn Header="サイズ" Binding="{Binding DataSize}" Width="80" IsReadOnly="True" />
+                            <DataGridTextColumn Header="サイズ / 全体桁数" Binding="{Binding SizeOrPrecision}" Width="100" IsReadOnly="True" />
                             <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey}" Width="60" IsReadOnly="True" />
                             <DataGridCheckBoxColumn Header="Not Null" Binding="{Binding IsNotNull}" Width="85" IsReadOnly="True" />
                             <DataGridCheckBoxColumn Header="FK" Binding="{Binding IsForeignKey}" Width="60" IsReadOnly="True" />

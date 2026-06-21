@@ -362,14 +362,9 @@ namespace TableSmith.Views
                     errors.AppendLine($"・{rowName}: 型を選択してください。");
                 }
 
-                if (column.DataSize.HasValue && column.DataSize.Value <= 0)
+                if (column.SizeOrPrecision.HasValue && column.SizeOrPrecision.Value <= 0)
                 {
-                    errors.AppendLine($"・{rowName}: サイズは1以上で入力してください。");
-                }
-
-                if (column.Precision.HasValue && column.Precision.Value < 1)
-                {
-                    errors.AppendLine($"・{rowName}: 精度は1以上で入力してください。");
+                    errors.AppendLine($"・{rowName}: サイズ／全体桁数は1以上で入力してください。");
                 }
 
                 if (column.Scale.HasValue && column.Scale.Value < 0)
@@ -381,13 +376,13 @@ namespace TableSmith.Views
                     && column.Scale.HasValue
                     && column.Scale.Value > column.Precision.Value)
                 {
-                    errors.AppendLine($"・{rowName}: 小数桁数は精度以下で入力してください。");
+                    errors.AppendLine($"・{rowName}: 小数桁数は全体桁数以下で入力してください。");
                 }
 
                 if (column.DataType.Equals("decimal", StringComparison.OrdinalIgnoreCase)
                     && !column.Precision.HasValue)
                 {
-                    errors.AppendLine($"・{rowName}: decimal型には精度を入力してください。");
+                    errors.AppendLine($"・{rowName}: decimal型にはサイズ／全体桁数を入力してください。");
                 }
 
                 if (column.IdentitySeed.HasValue && column.IdentitySeed.Value < 1)
@@ -472,10 +467,20 @@ namespace TableSmith.Views
                 errors.AppendLine($"・{rowName}: 外部キーの型は参照PK '{reference.ReferenceId}' と同じ '{referencedColumn.DataType}' にしてください。");
             }
 
-            if (column.DataSize != referencedColumn.DataSize)
+            if (column.SizeOrPrecision != referencedColumn.SizeOrPrecision)
             {
-                var size = referencedColumn.DataSize.HasValue ? referencedColumn.DataSize.Value.ToString() : "未指定";
-                errors.AppendLine($"・{rowName}: 外部キーのサイズは参照PK '{reference.ReferenceId}' と同じ '{size}' にしてください。");
+                var size = referencedColumn.SizeOrPrecision.HasValue
+                    ? referencedColumn.SizeOrPrecision.Value.ToString()
+                    : "未指定";
+                errors.AppendLine($"・{rowName}: 外部キーのサイズ／全体桁数は参照PK '{reference.ReferenceId}' と同じ '{size}' にしてください。");
+            }
+
+            if (column.Scale != referencedColumn.Scale)
+            {
+                var scale = referencedColumn.Scale.HasValue
+                    ? referencedColumn.Scale.Value.ToString()
+                    : "未指定";
+                errors.AppendLine($"・{rowName}: 外部キーの小数桁数は参照PK '{reference.ReferenceId}' と同じ '{scale}' にしてください。");
             }
         }
 

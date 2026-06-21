@@ -14,7 +14,7 @@ namespace TableSmith.Services
             "カラム物理名",
             "カラム論理名",
             "データ型",
-            "サイズ",
+            "サイズ／全体桁数",
             "PK",
             "FK",
             "Not Null",
@@ -22,7 +22,6 @@ namespace TableSmith.Services
             "参照テーブル",
             "参照カラム",
             "説明",
-            "精度",
             "小数桁数",
             "自動採番",
             "保護対象",
@@ -174,9 +173,9 @@ namespace TableSmith.Services
                 sheet.Cell(row, 2).Value = column.ColumnName;
                 sheet.Cell(row, 3).Value = column.ColumnDisplayName;
                 sheet.Cell(row, 4).Value = column.DataType;
-                if (column.DataSize.HasValue)
+                if (column.SizeOrPrecision.HasValue)
                 {
-                    sheet.Cell(row, 5).Value = column.DataSize.Value;
+                    sheet.Cell(row, 5).Value = column.SizeOrPrecision.Value;
                 }
                 sheet.Cell(row, 6).Value = column.IsPrimaryKey ? "○" : string.Empty;
                 sheet.Cell(row, 7).Value = column.IsForeignKey ? "○" : string.Empty;
@@ -185,17 +184,13 @@ namespace TableSmith.Services
                 sheet.Cell(row, 10).Value = column.ReferenceTableName;
                 sheet.Cell(row, 11).Value = column.ReferenceColumnName;
                 sheet.Cell(row, 12).Value = column.Description;
-                if (column.Precision.HasValue)
-                {
-                    sheet.Cell(row, 13).Value = column.Precision.Value;
-                }
                 if (column.Scale.HasValue)
                 {
-                    sheet.Cell(row, 14).Value = column.Scale.Value;
+                    sheet.Cell(row, 13).Value = column.Scale.Value;
                 }
-                sheet.Cell(row, 15).Value = column.IsIdentity ? "○" : string.Empty;
-                sheet.Cell(row, 16).Value = column.IsProtected ? "○" : string.Empty;
-                sheet.Cell(row, 17).Value = column.ProtectionType;
+                sheet.Cell(row, 14).Value = column.IsIdentity ? "○" : string.Empty;
+                sheet.Cell(row, 15).Value = column.IsProtected ? "○" : string.Empty;
+                sheet.Cell(row, 16).Value = column.ProtectionType;
                 row++;
             }
 
@@ -207,7 +202,7 @@ namespace TableSmith.Services
             {
                 sheet.Range(headerRow + 1, 6, row - 1, 8).Style.Alignment
                     .SetHorizontal(XLAlignmentHorizontalValues.Center);
-                sheet.Range(headerRow + 1, 15, row - 1, 16).Style.Alignment
+                sheet.Range(headerRow + 1, 14, row - 1, 15).Style.Alignment
                     .SetHorizontal(XLAlignmentHorizontalValues.Center);
             }
 
@@ -350,8 +345,8 @@ namespace TableSmith.Services
         {
             var widths = new[]
             {
-                7d, 24d, 24d, 14d, 10d, 8d, 8d, 10d, 22d, 24d, 24d, 42d,
-                10d, 12d, 12d, 12d, 24d
+                7d, 24d, 24d, 14d, 16d, 8d, 8d, 10d, 22d, 24d, 24d, 42d,
+                12d, 12d, 12d, 24d
             };
             for (var index = 0; index < widths.Length; index++)
             {

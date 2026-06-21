@@ -44,7 +44,7 @@
             <Setter Property="ToolTip" Value="カラムのデータ型を選択してください。" />
         </Style>
         <Style x:Key="ColumnSizeCellStyle" TargetType="TextBox">
-            <Setter Property="ToolTip" Value="文字列型や decimal 型など、サイズ指定が必要な型の桁数・長さを入力してください。" />
+            <Setter Property="ToolTip" Value="文字列型の長さ、整数型の設計上の桁数、decimal型の全体桁数を入力してください。" />
         </Style>
         <Style x:Key="ColumnCheckCellStyle" TargetType="CheckBox">
             <Setter Property="HorizontalAlignment" Value="Center" />
@@ -61,11 +61,8 @@
         <Style x:Key="ColumnDescriptionCellStyle" TargetType="TextBox">
             <Setter Property="ToolTip" Value="カラムの意味、入力ルール、補足説明を入力してください。" />
         </Style>
-        <Style x:Key="ColumnPrecisionCellStyle" TargetType="TextBox">
-            <Setter Property="ToolTip" Value="decimal型の全体桁数を1以上で入力します。" />
-        </Style>
         <Style x:Key="ColumnScaleCellStyle" TargetType="TextBox">
-            <Setter Property="ToolTip" Value="decimal型の小数桁数を0以上、精度以下で入力します。" />
+            <Setter Property="ToolTip" Value="decimal型の小数桁数を0以上、全体桁数以下で入力します。" />
         </Style>
         <Style x:Key="IdentityValueCellStyle" TargetType="TextBox">
             <Setter Property="ToolTip" Value="自動採番の開始値または増分値を1以上で入力します。未指定時は1です。" />
@@ -75,11 +72,7 @@
         </Style>
         <Style x:Key="ColumnSizeDataGridCellStyle" TargetType="DataGridCell">
             <Setter Property="IsEnabled" Value="{Binding IsDataSizeEnabled}" />
-            <Setter Property="ToolTip" Value="サイズは文字列型の場合だけ入力できます。" />
-        </Style>
-        <Style x:Key="ColumnPrecisionDataGridCellStyle" TargetType="DataGridCell">
-            <Setter Property="IsEnabled" Value="{Binding IsPrecisionEnabled}" />
-            <Setter Property="ToolTip" Value="精度はdecimal型の場合だけ入力できます。" />
+            <Setter Property="ToolTip" Value="文字列型、整数型、decimal型で入力できます。" />
         </Style>
         <Style x:Key="ColumnScaleDataGridCellStyle" TargetType="DataGridCell">
             <Setter Property="IsEnabled" Value="{Binding IsScaleEnabled}" />
@@ -250,8 +243,7 @@
                                     </x:Array>
                                 </DataGridComboBoxColumn.ItemsSource>
                             </DataGridComboBoxColumn>
-                            <DataGridTextColumn Header="サイズ" Binding="{Binding DataSize, UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource ColumnSizeDataGridCellStyle}" EditingElementStyle="{StaticResource ColumnSizeCellStyle}" Width="85" />
-                            <DataGridTextColumn Header="精度" Binding="{Binding Precision, UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource ColumnPrecisionDataGridCellStyle}" EditingElementStyle="{StaticResource ColumnPrecisionCellStyle}" Width="75" />
+                            <DataGridTextColumn Header="サイズ / 全体桁数" Binding="{Binding SizeOrPrecision, UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource ColumnSizeDataGridCellStyle}" EditingElementStyle="{StaticResource ColumnSizeCellStyle}" Width="100" />
                             <DataGridTextColumn Header="小数桁数" Binding="{Binding Scale, UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource ColumnScaleDataGridCellStyle}" EditingElementStyle="{StaticResource ColumnScaleCellStyle}" Width="85" />
                             <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="60" />
                             <DataGridCheckBoxColumn Header="Not Null" Binding="{Binding IsNotNull, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource ColumnCheckCellStyle}" EditingElementStyle="{StaticResource ColumnCheckCellStyle}" Width="85" />

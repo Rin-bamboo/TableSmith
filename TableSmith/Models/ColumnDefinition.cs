@@ -107,6 +107,7 @@ namespace TableSmith.Models
 
                 _dataSize = normalizedValue;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SizeOrPrecision));
             }
         }
 
@@ -122,6 +123,7 @@ namespace TableSmith.Models
                 if (_precision == normalizedValue) return;
                 _precision = normalizedValue;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SizeOrPrecision));
             }
         }
 
@@ -349,10 +351,36 @@ namespace TableSmith.Models
         public string Description { get; set; } = string.Empty;
 
         /// <summary>
+        /// 画面上の「サイズ／全体桁数」です。
+        /// decimal型ではPrecision、それ以外の対応型ではDataSizeを読み書きします。
+        /// </summary>
+        [JsonIgnore]
+        public int? SizeOrPrecision
+        {
+            get => IsDecimalType(DataType) ? Precision : DataSize;
+            set
+            {
+                if (IsDecimalType(DataType))
+                {
+                    Precision = value;
+                }
+                else
+                {
+                    DataSize = value;
+                }
+
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
         /// 現在の型でサイズを入力できるかどうかを表します。
         /// </summary>
         [JsonIgnore]
-        public bool IsDataSizeEnabled => IsStringType(DataType);
+        public bool IsDataSizeEnabled =>
+            IsStringType(DataType)
+            || IsIntegerType(DataType)
+            || IsDecimalType(DataType);
 
         /// <summary>
         /// 現在の型で精度を入力できるかどうかを表します。
@@ -416,6 +444,7 @@ namespace TableSmith.Models
             OnPropertyChanged(nameof(IsScaleEnabled));
             OnPropertyChanged(nameof(IsIdentityEnabled));
             OnPropertyChanged(nameof(IsIdentityValueEnabled));
+            OnPropertyChanged(nameof(SizeOrPrecision));
         }
 
         private static bool IsStringType(string dataType)
@@ -431,11 +460,15 @@ namespace TableSmith.Models
             return dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsNumericType(string dataType)
+        private static bool IsIntegerType(string dataType)
         {
             return dataType.Equals("bigint", StringComparison.OrdinalIgnoreCase)
-                || dataType.Equals("int", StringComparison.OrdinalIgnoreCase)
-                || dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase);
+                || dataType.Equals("int", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsNumericType(string dataType)
+        {
+            return IsIntegerType(dataType) || IsDecimalType(dataType);
         }
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
