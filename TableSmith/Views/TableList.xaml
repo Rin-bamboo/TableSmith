@@ -84,6 +84,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120" />
@@ -98,8 +99,32 @@
                         <TextBlock Grid.Row="0" Grid.Column="2" Text="テーブル論理名" VerticalAlignment="Center" Margin="0,0,10,10" />
                         <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding SelectedTable.TableDisplayName}" IsReadOnly="True" Height="30" Margin="0,0,0,10" />
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="説明" VerticalAlignment="Top" Margin="0,4,10,0" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="スキーマ名" VerticalAlignment="Center" Margin="0,0,10,10" />
+                        <TextBox Grid.Row="1" Grid.Column="1"
+                                 Text="{Binding SelectedTable.SchemaName}"
+                                 IsReadOnly="True"
+                                 Height="30"
+                                 Margin="0,0,24,10" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="文字コード / 照合順序" VerticalAlignment="Center" Margin="0,0,10,10" />
+                        <Grid Grid.Row="1" Grid.Column="3" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding SelectedTable.CharacterSet}"
+                                     IsReadOnly="True"
+                                     Height="30"
+                                     Margin="0,0,6,0" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding SelectedTable.Collation}"
+                                     IsReadOnly="True"
+                                     Height="30"
+                                     Margin="6,0,0,0" />
+                        </Grid>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="説明" VerticalAlignment="Top" Margin="0,4,10,0" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
                                  Text="{Binding SelectedTable.Description}"
                                  IsReadOnly="True"
                                  TextWrapping="Wrap"
@@ -135,20 +160,27 @@
                               GridLinesVisibility="Horizontal"
                               RowHeaderWidth="0"
                               AlternatingRowBackground="#EEF4FB"
+                              HorizontalScrollBarVisibility="Auto"
                               SelectionMode="Single"
                               SelectionUnit="FullRow">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="No" Binding="{Binding No}" Width="55" IsReadOnly="True" />
-                            <DataGridTextColumn Header="物理名" Binding="{Binding ColumnName}" Width="150" IsReadOnly="True" />
-                            <DataGridTextColumn Header="論理名" Binding="{Binding ColumnDisplayName}" Width="160" IsReadOnly="True" />
-                            <DataGridTextColumn Header="型" Binding="{Binding DataType}" Width="120" IsReadOnly="True" />
+                            <DataGridTextColumn Header="物理名" Binding="{Binding ColumnName}" Width="160" IsReadOnly="True" />
+                            <DataGridTextColumn Header="論理名" Binding="{Binding ColumnDisplayName}" Width="170" IsReadOnly="True" />
+                            <DataGridTextColumn Header="型" Binding="{Binding DataType}" Width="130" IsReadOnly="True" />
                             <DataGridTextColumn Header="サイズ / 全体桁数" Binding="{Binding SizeOrPrecision}" Width="100" IsReadOnly="True" />
+                            <DataGridTextColumn Header="小数桁数" Binding="{Binding Scale}" Width="85" IsReadOnly="True" />
                             <DataGridCheckBoxColumn Header="PK" Binding="{Binding IsPrimaryKey}" Width="60" IsReadOnly="True" />
                             <DataGridCheckBoxColumn Header="Not Null" Binding="{Binding IsNotNull}" Width="85" IsReadOnly="True" />
                             <DataGridCheckBoxColumn Header="FK" Binding="{Binding IsForeignKey}" Width="60" IsReadOnly="True" />
-                            <DataGridTextColumn Header="参照PK" Binding="{Binding ForeignKeyDisplayName}" Width="150" IsReadOnly="True" />
-                            <DataGridTextColumn Header="既定値" Binding="{Binding DefaultValue}" Width="110" IsReadOnly="True" />
-                            <DataGridTextColumn Header="説明" Binding="{Binding Description}" Width="*" MinWidth="160" IsReadOnly="True" />
+                            <DataGridTextColumn Header="参照PK" Binding="{Binding ForeignKeyReferenceId}" Width="240" IsReadOnly="True" />
+                            <DataGridCheckBoxColumn Header="自動採番" Binding="{Binding IsIdentity}" Width="85" IsReadOnly="True" />
+                            <DataGridTextColumn Header="開始値" Binding="{Binding IdentitySeed}" Width="75" IsReadOnly="True" />
+                            <DataGridTextColumn Header="増分" Binding="{Binding IdentityIncrement}" Width="70" IsReadOnly="True" />
+                            <DataGridCheckBoxColumn Header="保護対象" Binding="{Binding IsProtected}" Width="85" IsReadOnly="True" />
+                            <DataGridTextColumn Header="保護方式" Binding="{Binding ProtectionType}" Width="140" IsReadOnly="True" />
+                            <DataGridTextColumn Header="既定値" Binding="{Binding DefaultValue}" Width="120" IsReadOnly="True" />
+                            <DataGridTextColumn Header="説明" Binding="{Binding Description}" Width="*" MinWidth="180" IsReadOnly="True" />
                         </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
