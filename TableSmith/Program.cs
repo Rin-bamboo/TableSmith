@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Windows;
 using TableSmith.Common;
+using Velopack;
 using WpfApp1.Page;
 
 namespace TableSmith
@@ -16,6 +17,10 @@ namespace TableSmith
         [STAThread]
         public static void Main()
         {
+            // Velopackのインストール・更新・アンインストール時のフック処理を実行します。
+            // WPFやログの初期化より前に呼び出し、更新処理時に不要な画面を生成しないようにします。
+            VelopackApp.Build().Run();
+
             try
             {
                 // log4netの初期化  

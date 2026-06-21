@@ -164,7 +164,23 @@ namespace TableSmith.Views
         /// </summary>
         private void VersionInfoMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var versionInfo = new VersionInfo
+            var versionInfo = new VersionInfo(
+                prepareForRestart: ConfirmSaveUnsavedChanges)
+            {
+                Owner = this
+            };
+
+            versionInfo.ShowDialog();
+        }
+
+        /// <summary>
+        /// バージョン情報画面を開き、GitHub Releasesの更新確認を直ちに実行します。
+        /// </summary>
+        private void CheckForUpdatesMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var versionInfo = new VersionInfo(
+                prepareForRestart: ConfirmSaveUnsavedChanges,
+                checkOnOpen: true)
             {
                 Owner = this
             };

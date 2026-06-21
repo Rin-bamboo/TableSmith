@@ -65,6 +65,7 @@
                               Click="OperationGuideMenuItem_Click" />
                 </MenuItem>
                 <Separator />
+                <MenuItem Header="更新を確認" Click="CheckForUpdatesMenuItem_Click" />
                 <MenuItem Header="バージョン情報" Click="VersionInfoMenuItem_Click" />
             </MenuItem>
         </Menu>

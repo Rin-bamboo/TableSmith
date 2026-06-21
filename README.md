@@ -125,6 +125,7 @@ TableSmithは、データベースのテーブル設計を支援するWindowsデ
 - ClosedXML
 - log4net
 - WpfAnimatedGif
+- Velopack
 
 ## ビルド
 
@@ -143,6 +144,77 @@ dotnet run --project TableSmith\TableSmith.csproj
 ```
 
 Visual Studio 2026から `WPF_TableSmith.sln` を開いて起動することもできます。
+
+## インストールと更新
+
+GitHub Releasesから`BambooSystem.TableSmith-win-Setup.exe`をダウンロードして実行します。
+インストーラー版では、`ヘルプ` → `更新を確認`またはバージョン情報画面の
+`更新を確認`から最新リリースを確認できます。
+
+新しいバージョンがある場合は、画面の案内に従ってダウンロードすると、
+Velopackが更新を適用してTableSmithを再起動します。
+
+Visual Studioや`dotnet run`から起動した未インストール版では、
+安全のためアプリ内更新を実行しません。
+
+## 開発者向けリリース手順
+
+リリースは`v*`形式のタグをpushすると、GitHub Actionsが自動作成します。
+
+1. リリース対象の変更を`main`ブランチへ反映します。
+2. SemVer形式でタグを作成します。
+3. タグをGitHubへpushします。
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+`.github/workflows/release.yml`が.NET 10のself-containedアプリを
+`win-x64`向けに発行し、Velopackのインストーラー、更新パッケージ、
+リリースフィードをGitHub Releasesへアップロードします。
+
+ワークフロー内の`GITHUB_TOKEN`はリリースのアップロードだけに使用します。
+アプリ本体にはGitHubトークンを埋め込んでいません。
+
+## Velopackのローカルパッケージ作成
+
+Velopack CLIは、アプリが参照するNuGetパッケージと同じ`1.2.0`を使用します。
+
+```powershell
+dotnet tool install --global vpk --version 1.2.0
+
+dotnet publish TableSmith\TableSmith.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -o publish `
+  /p:Version=1.0.0
+
+vpk pack `
+  --packId BambooSystem.TableSmith `
+  --packTitle TableSmith `
+  --packVersion 1.0.0 `
+  --packDir publish `
+  --mainExe TableSmith.exe `
+  --runtime win-x64 `
+  --icon TableSmith\Resources\Images\TableSmith.ico `
+  --outputDir Releases
+```
+
+差分更新パッケージも作成する場合は、`vpk pack`の前に公開済みの最新版を取得します。
+
+```powershell
+vpk download github `
+  --repoUrl https://github.com/Rin-bamboo/TableSmith `
+  --outputDir Releases
+```
+
+作成された`Releases`フォルダには、セットアッププログラム、フル更新パッケージ、
+ポータブル版、`releases.win.json`などが出力されます。
+
+一般配布前にはWindowsコード署名証明書でインストーラーと実行ファイルへ
+署名することを推奨します。署名されていない場合、SmartScreenの警告が表示されます。
 
 ## 基本的な使い方
 
