@@ -113,13 +113,13 @@ TableSmithは、データベースのテーブル設計を支援するWindowsデ
 ## 動作環境
 
 - Windows
-- .NET 8 Desktop Runtime
+- .NET 10 Desktop Runtime
 
-開発には.NET 8 SDKが必要です。
+開発にはVisual Studio 2026または.NET 10 SDKが必要です。
 
 ## 使用技術
 
-- C# / .NET 8
+- C# / .NET 10
 - WPF
 - MahApps.Metro
 - ClosedXML
@@ -142,7 +142,7 @@ dotnet build WPF_TableSmith.sln
 dotnet run --project TableSmith\TableSmith.csproj
 ```
 
-Visual Studioから `WPF_TableSmith.sln` を開いて起動することもできます。
+Visual Studio 2026から `WPF_TableSmith.sln` を開いて起動することもできます。
 
 ## 基本的な使い方
 
